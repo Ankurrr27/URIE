@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resubee
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: resubee
+  template:
+    metadata:
+      labels:
+        app: resubee
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/your-org/resubee:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: AUTH_URL
+              value: https://resubee.example.com
+            - name: NEXT_PUBLIC_APP_URL
+              value: https://resubee.example.com
+          envFrom:
+            - secretRef:
+                name: resubee-secrets
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
