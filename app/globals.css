@@ -51,10 +51,42 @@
   @apply border-border;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   @apply bg-background text-foreground antialiased;
 }
 
+body,
+button,
+a,
+input,
+textarea {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
 ::selection {
   @apply bg-primary text-primary-foreground;
+}
+
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}
+
+.resume-theme-modern {
+  --resume-accent: 173 70% 42%;
+  --resume-font-heading: Inter, ui-sans-serif, system-ui, sans-serif;
+  --resume-font-body: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.resume-theme-corporate {
+  --resume-accent: 222 56% 35%;
+  --resume-font-heading: Georgia, Cambria, "Times New Roman", serif;
+  --resume-font-body: Inter, ui-sans-serif, system-ui, sans-serif;
 }

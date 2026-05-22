@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       data: {
         email,
         name: body.name,
-        passwordHash: await bcrypt.hash(body.password, 12)
+        hashedPassword: await bcrypt.hash(body.password, 12)
       },
       select: { id: true, email: true, name: true, role: true }
     });

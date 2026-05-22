@@ -1,10 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { updateSupabaseSession } from "@/utils/supabase/middleware";
 
 export default async function middleware(request: NextRequest) {
-  const supabaseResponse = await updateSupabaseSession(request);
-  const isProtected = request.nextUrl.pathname.startsWith("/dashboard");
+  const isProtected = ["/dashboard", "/editor", "/latex", "/ats"].some((path) => request.nextUrl.pathname.startsWith(path));
   const hasSession =
     request.cookies.has("authjs.session-token") ||
     request.cookies.has("__Secure-authjs.session-token") ||
@@ -17,9 +15,9 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/((?!_next/static|_next/image|favicon.ico).*)"]
+  matcher: ["/dashboard/:path*", "/editor/:path*", "/latex/:path*", "/ats/:path*"]
 };

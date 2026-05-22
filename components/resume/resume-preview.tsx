@@ -1,10 +1,11 @@
 import type { Resume } from "@/types/resume";
 
 export function ResumePreview({ resume }: { resume: Resume }) {
+  const theme = String(resume.settings.theme ?? "modern");
   return (
-    <div className="min-h-[720px] rounded-lg border bg-white p-8 text-zinc-950 shadow-sm">
+    <div className={`min-h-[720px] rounded-lg border bg-white p-8 text-zinc-950 shadow-sm ${theme === "corporate" ? "resume-theme-corporate" : "resume-theme-modern"}`}>
       <header className="border-b pb-4">
-        <h2 className="text-3xl font-bold">{String(resume.contact.name ?? "Your Name")}</h2>
+        <h2 className="text-3xl font-bold" style={{ color: "hsl(var(--resume-accent))", fontFamily: "var(--resume-font-heading)" }}>{String(resume.contact.name ?? "Your Name")}</h2>
         <p className="mt-1 text-sm text-zinc-600">
           {[resume.contact.email, resume.contact.phone, resume.contact.location].filter(Boolean).join(" | ")}
         </p>

@@ -56,11 +56,12 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
-  passwordHash  String?
+  hashedPassword String?  @map("passwordHash")
   role          Role      @default(USER)
   headline      String?
   location      String?
   website       String?
+  themePreference String   @default("system")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

@@ -94,3 +94,12 @@ export const composeResumeSchema = z.object({
   targetRole: optionalText(140),
   nodeIds: z.array(z.string()).min(1).max(40)
 });
+
+export const profileUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  headline: optionalText(140),
+  location: optionalText(120),
+  website: optionalText(180),
+  image: z.string().url().optional().nullable(),
+  themePreference: z.enum(["light", "dark", "system"]).default("system")
+});

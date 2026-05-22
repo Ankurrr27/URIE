@@ -4,11 +4,32 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations";
+import { env } from "@/lib/env";
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
-  secret: process.env.AUTH_SECRET,
-  session: { strategy: "jwt" },
+  secret: env.AUTH_SECRET,
+  trustHost: true,
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60
+  },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        maxAge: 30 * 24 * 60 * 60,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production"
+      }
+    }
+  },
   pages: {
     signIn: "/login"
   },
@@ -26,8 +47,8 @@ export const authConfig = {
           where: { email: parsed.data.email.toLowerCase() }
         });
 
-        if (!user?.passwordHash) return null;
-        const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+        if (!user?.hashedPassword) return null;
+        const valid = await bcrypt.compare(parsed.data.password, user.hashedPassword);
         if (!valid) return null;
 
         return {
@@ -52,6 +73,9 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "USER" | "ADMIN";
+        session.user.name = token.name ?? session.user.name;
+        session.user.email = token.email ?? session.user.email;
+        session.user.image = token.picture ?? session.user.image;
       }
       return session;
     }
