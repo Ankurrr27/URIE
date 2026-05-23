@@ -36,7 +36,7 @@ export async function generateResumeAdvice(system: string, prompt: string) {
 function fallbackAdvice(prompt: string) {
   const words = prompt.split(/\s+/).slice(0, 24).join(" ");
   return [
-    "OpenAI is not configured, so ResuBee used its local rule-based assistant.",
+    "OpenAI is not configured, so URIE used its local rule-based assistant.",
     `Focus the rewrite around: ${words}.`,
     "Use active verbs, add measurable outcomes, and mirror the job description's strongest keywords naturally."
   ].join("\n");

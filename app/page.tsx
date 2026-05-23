@@ -15,8 +15,8 @@ const features = [
 ];
 
 const faqs = [
-  ["Is ResuBee only for technical resumes?", "No. The node-based universal resume model works for product, finance, research, business, and technical roles."],
-  ["Does the ATS score guarantee interviews?", "No tool can guarantee interviews, but ResuBee helps align evidence, language, and structure with the job description."],
+  ["Is URIE only for technical resumes?", "No. The node-based universal resume model works for product, finance, research, business, and technical roles."],
+  ["Does the ATS score guarantee interviews?", "No tool can guarantee interviews, but URIE helps align evidence, language, and structure with the job description."],
   ["Can I keep multiple resume versions?", "Yes. Build one universal career library, then compose focused resumes for different roles."]
 ];
 
@@ -26,8 +26,8 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">RB</span>
-            ResuBee
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">U</span>
+            URIE
           </Link>
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">Features</a>
@@ -49,10 +49,10 @@ export default function HomePage() {
           <FadeIn>
             <Badge variant="secondary" className="mb-5">AI Resume Builder + ATS Analyzer</Badge>
             <h1 className="max-w-4xl text-4xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">
-              Build role-ready resumes from one universal career brain.
+              Universal Resume Intelligence Engine.
             </h1>
             <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-              Store every achievement once, compose focused resumes for each job, analyze ATS fit, and refine your language with AI.
+              URIE helps you store every achievement once, compose focused resumes for each job, analyze ATS fit, and refine your language with AI.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link href="/signup">Create resume <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
@@ -109,7 +109,7 @@ export default function HomePage() {
               <CardContent>
                 <div className={`rounded-lg border bg-white p-6 text-zinc-950 ${name.includes("Corporate") ? "resume-theme-corporate" : "resume-theme-modern"}`}>
                   <h3 className="text-2xl font-bold" style={{ color: "hsl(var(--resume-accent))" }}>Avery Johnson</h3>
-                  <p className="text-sm text-zinc-600">Senior Product Engineer · ats-ready@example.com</p>
+                  <p className="text-sm text-zinc-600">Senior Product Engineer | ats-ready@example.com</p>
                   <div className="mt-5 space-y-3 text-sm">
                     <p className="font-semibold uppercase tracking-wide">Experience</p>
                     <p>Led full-stack platform work that improved application completion by 31%.</p>
@@ -172,7 +172,7 @@ export default function HomePage() {
 
       <footer className="border-t py-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-sm text-muted-foreground sm:px-6 lg:px-8">
-          <div className="font-semibold text-foreground">ResuBee</div>
+          <div className="font-semibold text-foreground">URIE</div>
           <p>AI resume building, ATS analysis, and role-specific career storytelling.</p>
         </div>
       </footer>

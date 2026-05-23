@@ -21,7 +21,7 @@ export function UserAvatar({
   const initials = getInitials(name);
 
   return (
-    <div className={cn("relative shrink-0 overflow-hidden rounded-full border bg-muted text-muted-foreground shadow-sm", sizes[size], className)}>
+    <div className={cn("relative shrink-0 overflow-hidden rounded-full border bg-muted text-muted-foreground shadow-sm ring-2 ring-primary/10", sizes[size], className)}>
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={image} alt={name ? `${name} profile image` : "Profile image"} className="h-full w-full object-cover" referrerPolicy="no-referrer" />

@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BookOpen,
   Bot,
   ChevronLeft,
+  ClipboardList,
+  FileChartColumnIncreasing,
   FileText,
-  Gauge,
+  GalleryVerticalEnd,
+  GraduationCap,
   LayoutDashboard,
-  Library,
   LogOut,
   Menu,
   Palette,
   Settings,
+  Sparkles,
   TextCursorInput,
   UserRound
 } from "lucide-react";
@@ -36,9 +38,11 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "Workspace",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/dashboard/universal", label: "Universal", icon: Library },
+      { href: "/dashboard/universal", label: "Add Node", icon: Sparkles },
+      { href: "/dashboard/node-to-resume", label: "Node to Resume", icon: ClipboardList },
+      { href: "/dashboard/nodes", label: "Node Manager", icon: GalleryVerticalEnd },
       { href: "/dashboard/resumes", label: "My Resumes", icon: FileText },
-      { href: "/dashboard/ats", label: "ATS Analyzer", icon: Gauge }
+      { href: "/dashboard/ats", label: "ATS Analyzer", icon: FileChartColumnIncreasing }
     ]
   },
   {
@@ -53,7 +57,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "Account",
     items: [
       { href: "/dashboard/settings", label: "Settings", icon: Settings },
-      { href: "/dashboard/guide", label: "Guide", icon: BookOpen },
+      { href: "/dashboard/guide", label: "Guide", icon: GraduationCap },
       { href: "/dashboard/profile", label: "Profile", icon: UserRound }
     ]
   }
@@ -81,20 +85,15 @@ export function DashboardShell({
       initial={false}
       animate={{ width: collapsed ? 84 : 280 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className="flex h-full flex-col border-r bg-card/90 p-3 shadow-sm backdrop-blur"
+      className="flex h-full flex-col border-r bg-card/95 p-3 shadow-sm backdrop-blur-xl"
       aria-label="Dashboard navigation"
     >
-      <div className="flex h-12 items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2 rounded-md px-2 focus-ring">
-          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">RB</span>
-          {!collapsed ? <span className="text-lg font-semibold">ResuBee</span> : null}
-        </Link>
-        <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setCollapsed((value) => !value)} aria-label="Toggle sidebar">
+      <div className={cn("mb-2 flex items-center", collapsed ? "justify-center" : "justify-end")}>
+        <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
           <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
         </Button>
       </div>
 
-      <Separator className="my-3" />
       <Link href="/dashboard/profile" className={cn("mb-3 flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent focus-ring", collapsed && "justify-center")}>
         <UserAvatar image={image} name={name ?? email} size="md" />
         {!collapsed ? (
@@ -119,8 +118,8 @@ export function DashboardShell({
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "group flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground outline-none transition hover:bg-accent hover:text-foreground focus-ring",
-                      active && "bg-primary/10 text-primary ring-1 ring-primary/20",
+                      "group flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground outline-none transition hover:bg-accent/80 hover:text-foreground focus-ring",
+                      active && "bg-primary/10 text-primary ring-1 ring-primary/20 soft-ring",
                       collapsed && "justify-center px-2"
                     )}
                     aria-current={active ? "page" : undefined}
@@ -162,7 +161,7 @@ export function DashboardShell({
 
       <motion.div initial={false} animate={{ paddingLeft: collapsed ? 84 : 280 }} transition={{ duration: 0.22 }} className="hidden md:block" />
       <div className={cn("min-h-screen transition-[padding] duration-200", collapsed ? "md:pl-[84px]" : "md:pl-[280px]")}>
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/85 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
               <Menu className="h-5 w-5" />

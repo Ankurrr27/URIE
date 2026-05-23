@@ -6,7 +6,7 @@ export default function GuidePage() {
     <div className="space-y-6">
       <div>
         <Badge variant="secondary" className="mb-3">Help center</Badge>
-        <h1 className="text-3xl font-semibold tracking-tight">ResuBee Guide</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">URIE Guide</h1>
         <p className="mt-2 text-sm text-muted-foreground">Learn how to build, analyze, and optimize targeted resumes.</p>
       </div>
       <GuideContent />

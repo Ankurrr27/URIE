@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 
 const nodeToSectionType: Record<CareerNodeType, SectionType> = {
+  CONTACT_INFO: SectionType.CUSTOM,
+  SOCIAL_HANDLE: SectionType.CUSTOM,
   SUMMARY: SectionType.SUMMARY,
   EXPERIENCE: SectionType.EXPERIENCE,
   EDUCATION: SectionType.EDUCATION,
@@ -10,6 +12,10 @@ const nodeToSectionType: Record<CareerNodeType, SectionType> = {
   PROJECT: SectionType.PROJECTS,
   CERTIFICATION: SectionType.CERTIFICATIONS,
   AWARD: SectionType.AWARDS,
+  ACHIEVEMENT: SectionType.AWARDS,
+  RELEVANT_COURSEWORK: SectionType.CUSTOM,
+  POSITION_OF_RESPONSIBILITY: SectionType.CUSTOM,
+  CODING_PROFILE: SectionType.CUSTOM,
   PUBLICATION: SectionType.CUSTOM,
   VOLUNTEERING: SectionType.CUSTOM,
   CUSTOM: SectionType.CUSTOM

@@ -62,7 +62,7 @@ export function ProfileSettingsForm({ user }: { user: ProfileUser }) {
           body: JSON.stringify(body)
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error?.message ?? "Could not save profile");
+        if (!response.ok) throw new Error(formatApiError(payload));
         toast.success("Profile saved");
         router.refresh();
       } catch (error) {
@@ -122,6 +122,34 @@ export function ProfileSettingsForm({ user }: { user: ProfileUser }) {
       </CardContent>
     </Card>
   );
+}
+
+function formatApiError(payload: unknown) {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "error" in payload &&
+    payload.error &&
+    typeof payload.error === "object" &&
+    "details" in payload.error
+  ) {
+    const details = payload.error.details as { fieldErrors?: Record<string, string[]> };
+    const first = Object.entries(details.fieldErrors ?? {}).find(([, messages]) => messages.length);
+    if (first) return `${first[0]}: ${first[1][0]}`;
+  }
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "error" in payload &&
+    payload.error &&
+    typeof payload.error === "object" &&
+    "message" in payload.error
+  ) {
+    return String(payload.error.message);
+  }
+
+  return "Could not save profile";
 }
 
 function Field({

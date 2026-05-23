@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Download, Expand, FileCode2, Minimize2, Play, Save } from "lucide-react";
+import { Download, Expand, FileCode2, Minimize2, PanelRight, Play, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +105,23 @@ export function LatexWorkspace() {
     return () => window.clearTimeout(timeout);
   }, [source]);
 
+  useEffect(() => {
+    if (!fullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setFullscreen(false);
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") void compile();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [fullscreen, source]);
+
   async function compile() {
     const response = await fetch("/api/latex/compile", {
       method: "POST",
@@ -134,59 +151,77 @@ export function LatexWorkspace() {
     setSource((current) => `${current.trim()}\n\n${value}`);
   }
 
+  const editorHeight = fullscreen ? "calc(100vh - 184px)" : "640px";
+  const previewHeight = fullscreen ? "calc(100vh - 184px)" : "640px";
+
   return (
-    <div className={fullscreen ? "fixed inset-0 z-50 overflow-auto bg-background p-4" : ""}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col overflow-hidden bg-background" : ""}>
+      <div className={fullscreen ? "sticky top-0 z-10 border-b bg-background/95 p-3 backdrop-blur-xl" : "mb-4 flex flex-wrap items-center justify-between gap-3"}>
+        <div className={fullscreen ? "flex flex-wrap items-center justify-between gap-3" : "contents"}>
+          <div>
+            {fullscreen ? (
+              <div className="mb-2 flex items-center gap-2">
+                <FileCode2 className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold">Focused LaTeX Workspace</p>
+                  <p className="text-xs text-muted-foreground">Esc exits fullscreen. Ctrl+Enter compiles.</p>
+                </div>
+              </div>
+            ) : null}
         <div className="flex flex-wrap gap-2">
           {Object.keys(templates).map((name) => (
             <Button key={name} size="sm" variant="secondary" onClick={() => setSource(templates[name as keyof typeof templates])}>{name}</Button>
           ))}
         </div>
+          </div>
         <div className="flex gap-2">
+          <Badge variant="secondary" className="hidden sm:inline-flex"><Save className="mr-1 h-3 w-3" /> Autosaved {savedAt ?? "soon"}</Badge>
           <Button size="sm" variant="outline" onClick={downloadPdf}><Download className="mr-2 h-4 w-4" /> PDF</Button>
+          <Button size="sm" onClick={compile}><Play className="mr-2 h-4 w-4" /> Compile</Button>
           <Button size="sm" variant="outline" onClick={() => setFullscreen((value) => !value)}>{fullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Expand className="mr-2 h-4 w-4" />}{fullscreen ? "Exit" : "Fullscreen"}</Button>
+        </div>
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader className="space-y-4">
+      <div className={fullscreen ? "grid min-h-0 flex-1 gap-3 p-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]" : "grid gap-6 xl:grid-cols-2"}>
+        <Card className={fullscreen ? "flex min-h-0 flex-col overflow-hidden" : ""}>
+          <CardHeader className={fullscreen ? "shrink-0 space-y-3 border-b bg-card/70 p-3" : "space-y-4"}>
             <div className="flex items-center justify-between gap-3">
               <CardTitle className="flex items-center gap-2"><FileCode2 className="h-5 w-5" /> LaTeX source</CardTitle>
-              <Button size="sm" onClick={compile}><Play className="mr-2 h-4 w-4" /> Compile</Button>
+              {!fullscreen ? <Button size="sm" onClick={compile}><Play className="mr-2 h-4 w-4" /> Compile</Button> : null}
             </div>
             <div className="flex flex-wrap gap-2">
               {snippets.map((snippet) => <Button key={snippet.label} size="sm" variant="outline" onClick={() => insertSnippet(snippet.value)}>{snippet.label}</Button>)}
-              <Badge variant="secondary" className="ml-auto"><Save className="mr-1 h-3 w-3" /> Autosaved {savedAt ?? "soon"}</Badge>
+              {!fullscreen ? <Badge variant="secondary" className="ml-auto"><Save className="mr-1 h-3 w-3" /> Autosaved {savedAt ?? "soon"}</Badge> : null}
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className={fullscreen ? "min-h-0 flex-1 space-y-3 p-3" : "space-y-3"}>
             {errors.length ? (
-              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive">
                 {errors.map((error) => <p key={error}>{error}</p>)}
               </div>
             ) : null}
-            <div className="overflow-hidden rounded-md border">
+            <div className="min-h-0 overflow-hidden rounded-md border">
               <MonacoLatexEditor
-                height={fullscreen ? "72vh" : "640px"}
+                height={editorHeight}
                 value={source}
                 onChange={setSource}
               />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader><CardTitle>Live preview</CardTitle></CardHeader>
-          <CardContent>{pdf ? <iframe title="Compiled PDF" src={pdf} className="h-[640px] w-full rounded-md border bg-white" /> : <Preview preview={preview} log={log} />}</CardContent>
+        <Card className={fullscreen ? "flex min-h-0 flex-col overflow-hidden" : ""}>
+          <CardHeader className={fullscreen ? "shrink-0 border-b bg-card/70 p-3" : ""}><CardTitle className="flex items-center gap-2"><PanelRight className="h-5 w-5" /> Live preview</CardTitle></CardHeader>
+          <CardContent className={fullscreen ? "min-h-0 flex-1 p-3" : ""}>{pdf ? <iframe title="Compiled PDF" src={pdf} className="w-full rounded-md border bg-white" style={{ height: previewHeight }} /> : <Preview preview={preview} log={log} height={previewHeight} />}</CardContent>
         </Card>
       </div>
     </div>
   );
 }
 
-function Preview({ preview, log }: { preview: ReturnType<typeof parseLatexPreview>; log: string }) {
+function Preview({ preview, log, height = "640px" }: { preview: ReturnType<typeof parseLatexPreview>; log: string; height?: string }) {
   return (
-    <div className="h-[640px] overflow-auto rounded-md border bg-zinc-100 p-6 text-zinc-950">
+    <div className="overflow-auto rounded-md border bg-zinc-100 p-4 text-zinc-950 sm:p-6" style={{ height }}>
       <div className="mx-auto min-h-full max-w-[720px] bg-white p-10 shadow-sm">
         <header className="border-b pb-4 text-center">
           <h2 className="text-3xl font-bold">{preview.name || "Your Name"}</h2>

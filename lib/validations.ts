@@ -19,6 +19,12 @@ const stringList = (maxItems: number, maxLength: number) =>
     return [];
   }, z.array(z.string().trim().min(1).max(maxLength)).max(maxItems).default([]));
 
+const imageUrl = z.preprocess((value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}, z.union([z.string().url(), z.string().regex(/^\/uploads\/.+/, "Must be an uploaded image path.")]).nullable().optional());
+
 export const signupSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
@@ -62,6 +68,8 @@ export const latexCompileSchema = z.object({
 
 export const careerNodeSchema = z.object({
   type: z.enum([
+    "CONTACT_INFO",
+    "SOCIAL_HANDLE",
     "SUMMARY",
     "EXPERIENCE",
     "EDUCATION",
@@ -69,6 +77,10 @@ export const careerNodeSchema = z.object({
     "PROJECT",
     "CERTIFICATION",
     "AWARD",
+    "ACHIEVEMENT",
+    "RELEVANT_COURSEWORK",
+    "POSITION_OF_RESPONSIBILITY",
+    "CODING_PROFILE",
     "PUBLICATION",
     "VOLUNTEERING",
     "CUSTOM"
@@ -100,6 +112,6 @@ export const profileUpdateSchema = z.object({
   headline: optionalText(140),
   location: optionalText(120),
   website: optionalText(180),
-  image: z.string().url().optional().nullable(),
+  image: imageUrl,
   themePreference: z.enum(["light", "dark", "system"]).default("system")
 });

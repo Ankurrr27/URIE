@@ -43,10 +43,10 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Metric title="Resumes" value={resumes} icon={FileText} detail="Saved resume versions" />
-        <Metric title="Universal nodes" value={nodes} icon={Library} detail="Reusable career facts" />
-        <Metric title="ATS analyses" value={analyses} icon={Gauge} detail="Job matches tested" />
-        <Metric title="Average score" value={`${average}%`} icon={TrendingUp} detail="Recent ATS average" />
+        <Metric title="Resumes" value={resumes} icon={FileText} detail="Saved resume versions" tone="primary" />
+        <Metric title="Universal nodes" value={nodes} icon={Library} detail="Reusable career facts" tone="success" />
+        <Metric title="ATS analyses" value={analyses} icon={Gauge} detail="Job matches tested" tone="warning" />
+        <Metric title="Average score" value={`${average}%`} icon={TrendingUp} detail="Recent ATS average" tone="primary" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
@@ -118,12 +118,32 @@ export default async function DashboardPage() {
   );
 }
 
-function Metric({ title, value, icon: Icon, detail }: { title: string; value: string | number; icon: React.ComponentType<{ className?: string }>; detail: string }) {
+function Metric({
+  title,
+  value,
+  icon: Icon,
+  detail,
+  tone
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+  detail: string;
+  tone: "primary" | "success" | "warning";
+}) {
+  const toneClass = {
+    primary: "bg-primary/10 text-primary ring-primary/15",
+    success: "bg-success/10 text-success ring-success/15",
+    warning: "bg-warning/10 text-warning ring-warning/15"
+  }[tone];
+
   return (
     <Card className="transition hover:-translate-y-0.5 hover:shadow-md">
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-primary" />
+        <span className={`rounded-md p-2 ring-1 ${toneClass}`}>
+          <Icon className="h-4 w-4" />
+        </span>
       </CardHeader>
       <CardContent>
         <div className="text-3xl font-semibold">{value}</div>

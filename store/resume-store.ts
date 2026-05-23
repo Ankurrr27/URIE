@@ -6,6 +6,8 @@ import type { Resume, ResumeSection } from "@/types/resume";
 type ResumeState = {
   activeResume: Resume | null;
   setActiveResume: (resume: Resume) => void;
+  updateSettings: (settings: Record<string, unknown>) => void;
+  updateContact: (contact: Record<string, unknown>) => void;
   updateSection: (sectionId: string, patch: Partial<ResumeSection>) => void;
   reorderSections: (sectionIds: string[]) => void;
 };
@@ -13,6 +15,18 @@ type ResumeState = {
 export const useResumeStore = create<ResumeState>((set) => ({
   activeResume: null,
   setActiveResume: (resume) => set({ activeResume: resume }),
+  updateSettings: (settings) =>
+    set((state) => ({
+      activeResume: state.activeResume
+        ? { ...state.activeResume, settings: { ...state.activeResume.settings, ...settings } }
+        : null
+    })),
+  updateContact: (contact) =>
+    set((state) => ({
+      activeResume: state.activeResume
+        ? { ...state.activeResume, contact: { ...state.activeResume.contact, ...contact } }
+        : null
+    })),
   updateSection: (sectionId, patch) =>
     set((state) => ({
       activeResume: state.activeResume

@@ -1,81 +1,115 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Brain, Briefcase, Check, FilePlus2, Plus, Search } from "lucide-react";
-import type { CareerNode, CareerNodeType } from "@/types/career-node";
-import { Badge } from "@/components/ui/badge";
+import { Brain, Plus } from "lucide-react";
+import type { CareerNodeType } from "@/types/career-node";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const nodeTypes: CareerNodeType[] = [
-  "SUMMARY",
-  "EXPERIENCE",
-  "PROJECT",
-  "SKILL",
-  "EDUCATION",
-  "CERTIFICATION",
-  "AWARD",
-  "PUBLICATION",
-  "VOLUNTEERING",
-  "CUSTOM"
+type FieldConfig = { name: string; label: string; placeholder: string; kind?: "input" | "textarea"; required?: boolean };
+type NodeConfig = { type: CareerNodeType; label: string; helper: string; fields: FieldConfig[] };
+
+const nodeTypes: NodeConfig[] = [
+  { type: "SKILL", label: "Skill", helper: "Only domain and skill name are needed.", fields: [
+    { name: "domain", label: "Skill domain", placeholder: "Full Stack / Backend / Tools", required: true },
+    { name: "skillName", label: "Skill name", placeholder: "Next.js", required: true }
+  ] },
+  { type: "PROJECT", label: "Project", helper: "Project node captures links, heading, timeline, and bullets.", fields: [
+    { name: "projectName", label: "Project heading", placeholder: "Vibe Code Editor", required: true },
+    { name: "timeline", label: "Timeline", placeholder: "Jan 2026 - Mar 2026" },
+    { name: "liveLink", label: "Working link", placeholder: "https://..." },
+    { name: "repoLink", label: "Repo link", placeholder: "https://github.com/..." },
+    { name: "designLink", label: "Design link", placeholder: "Figma / demo / case study link" },
+    { name: "bullets", label: "Bullets", placeholder: "One bullet per line. Focus on impact and tech.", kind: "textarea", required: true }
+  ] },
+  { type: "EDUCATION", label: "Education", helper: "Education needs college, course, CGPA, and graduation date.", fields: [
+    { name: "college", label: "College name", placeholder: "Indian Institute of Information Technology, Kota", required: true },
+    { name: "course", label: "Course name", placeholder: "Bachelor of Computer Science", required: true },
+    { name: "cgpa", label: "CGPA / grade", placeholder: "8.5 CGPA" },
+    { name: "graduationDate", label: "Graduation date", placeholder: "May 2028" }
+  ] },
+  { type: "CONTACT_INFO", label: "Contact", helper: "Basic contact info for resume headers.", fields: [
+    { name: "email", label: "Email", placeholder: "you@example.com", required: true },
+    { name: "phone", label: "Phone", placeholder: "+91..." },
+    { name: "location", label: "Location", placeholder: "City, Country" },
+    { name: "portfolio", label: "Portfolio", placeholder: "https://..." }
+  ] },
+  { type: "SOCIAL_HANDLE", label: "Social", helper: "Add one social handle at a time.", fields: [
+    { name: "platform", label: "Platform", placeholder: "LinkedIn / Twitter / Portfolio", required: true },
+    { name: "url", label: "URL", placeholder: "https://...", required: true }
+  ] },
+  { type: "CODING_PROFILE", label: "Coding", helper: "Coding profile nodes are for GitHub, LeetCode, GFG, etc.", fields: [
+    { name: "platform", label: "Platform", placeholder: "GitHub / LeetCode / GFG", required: true },
+    { name: "url", label: "Profile URL", placeholder: "https://...", required: true },
+    { name: "stats", label: "Stats", placeholder: "500+ problems solved / 1900 rating" }
+  ] },
+  { type: "RELEVANT_COURSEWORK", label: "Coursework", helper: "Keep coursework as a comma-separated course list.", fields: [
+    { name: "courses", label: "Courses", placeholder: "DSA, DBMS, OS, OOP, ML", required: true }
+  ] },
+  { type: "ACHIEVEMENT", label: "Achievement", helper: "Achievement needs title, metric, and context.", fields: [
+    { name: "achievement", label: "Achievement", placeholder: "Hackathon finalist", required: true },
+    { name: "metric", label: "Metric", placeholder: "Top 50 of 880+ teams" },
+    { name: "context", label: "Context", placeholder: "Built AI healthcare platform", kind: "textarea" }
+  ] },
+  { type: "POSITION_OF_RESPONSIBILITY", label: "Responsibility", helper: "Leadership/responsibility nodes use role, organization, timeline, and bullets.", fields: [
+    { name: "role", label: "Role", placeholder: "Vice President", required: true },
+    { name: "organization", label: "Organization", placeholder: "Community / club / institute", required: true },
+    { name: "timeline", label: "Timeline", placeholder: "2026 - Present" },
+    { name: "bullets", label: "Bullets", placeholder: "One bullet per line.", kind: "textarea", required: true }
+  ] },
+  { type: "CERTIFICATION", label: "Certificate", helper: "Certificate nodes track issuer and credential link.", fields: [
+    { name: "certificateName", label: "Certificate name", placeholder: "AWS Cloud Practitioner", required: true },
+    { name: "issuer", label: "Issuer", placeholder: "Amazon Web Services" },
+    { name: "credentialLink", label: "Credential link", placeholder: "https://..." }
+  ] },
+  { type: "EXPERIENCE", label: "Experience", helper: "Experience uses role, company, timeline, and impact bullets.", fields: [
+    { name: "role", label: "Role", placeholder: "Software Engineer Intern", required: true },
+    { name: "company", label: "Company", placeholder: "Company name", required: true },
+    { name: "timeline", label: "Timeline", placeholder: "May 2026 - Jul 2026" },
+    { name: "bullets", label: "Bullets", placeholder: "One bullet per line.", kind: "textarea", required: true }
+  ] },
+  { type: "CUSTOM", label: "Custom", helper: "For anything else.", fields: [
+    { name: "title", label: "Title", placeholder: "Custom node", required: true },
+    { name: "details", label: "Details", placeholder: "Details", kind: "textarea", required: true }
+  ] }
 ];
 
-export function UniversalResumeWorkspace({ initialNodes }: { initialNodes: CareerNode[] }) {
-  const router = useRouter();
-  const [nodes, setNodes] = useState(initialNodes);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState<CareerNodeType>("EXPERIENCE");
+export function UniversalResumeWorkspace() {
+  const [type, setType] = useState<CareerNodeType>("PROJECT");
+  const selectedType = nodeTypes.find((item) => item.type === type) ?? nodeTypes[0];
   const [pending, startTransition] = useTransition();
 
-  const filtered = useMemo(() => {
-    const needle = query.toLowerCase().trim();
-    if (!needle) return nodes;
-    return nodes.filter((node) =>
-      [node.title, node.organization, node.summary, ...node.tags, ...node.skills, ...node.keywords]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(needle))
-    );
-  }, [nodes, query]);
-
   async function createNode(formData: FormData) {
-    const title = String(formData.get("title") ?? "").trim();
-    const summary = String(formData.get("summary") ?? "").trim();
-    const organization = String(formData.get("organization") ?? "").trim();
-    const skills = splitList(String(formData.get("skills") ?? ""));
-    const tags = splitList(String(formData.get("tags") ?? ""));
-    const keywords = splitList(String(formData.get("keywords") ?? ""));
+    const nodePayload = buildNodePayload(type, formData);
 
     startTransition(async () => {
       try {
-        if (title.length < 2) throw new Error("Node title must be at least 2 characters.");
-        if (!summary) throw new Error("Reusable evidence is required.");
+        if (nodePayload.title.length < 2) throw new Error("Please fill the required title field.");
+        if (!nodePayload.summary) throw new Error("Please fill the required details field.");
         const response = await fetch("/api/career-nodes", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             type,
-            title,
-            organization: organization || null,
-            summary,
-            content: { bullets: summary ? [summary] : [] },
-            tags,
-            skills,
-            keywords,
-            impactScore: estimateImpact(summary),
-            evidenceLevel: /\d+%|\$\d+|\d+x|\d+\s+(users|customers|requests)/i.test(summary) ? 4 : 2,
+            title: nodePayload.title,
+            organization: nodePayload.organization,
+            summary: nodePayload.summary,
+            content: nodePayload.content,
+            tags: nodePayload.tags,
+            skills: nodePayload.skills,
+            keywords: nodePayload.keywords,
+            impactScore: estimateImpact(nodePayload.summary),
+            evidenceLevel: /\d+%|\$\d+|\d+x|\d+\s+(users|customers|requests)/i.test(nodePayload.summary) ? 4 : 2,
             isCurrent: false,
             visibility: true
           })
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(formatApiError(payload));
-        setNodes((current) => [payload.data, ...current]);
         toast.success("Career node added to your universal resume");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not create node");
@@ -83,34 +117,9 @@ export function UniversalResumeWorkspace({ initialNodes }: { initialNodes: Caree
     });
   }
 
-  async function composeResume(formData: FormData) {
-    const title = String(formData.get("resumeTitle") ?? "").trim();
-    const targetRole = String(formData.get("targetRole") ?? "").trim();
-
-    startTransition(async () => {
-      try {
-        const response = await fetch("/api/career-nodes?action=compose", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, targetRole, nodeIds: selected })
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(formatApiError(payload));
-        toast.success("Role-specific resume created");
-        router.push(`/dashboard/resumes/${payload.data.id}`);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not compose resume");
-      }
-    });
-  }
-
-  function toggleNode(id: string) {
-    setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
-  }
-
   return (
-    <div className="grid gap-6 xl:grid-cols-[420px_1fr_360px]">
-      <Card>
+    <div className="max-w-3xl">
+      <Card className="surface-panel">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
@@ -122,87 +131,18 @@ export function UniversalResumeWorkspace({ initialNodes }: { initialNodes: Caree
           <form action={createNode} className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
               {nodeTypes.map((item) => (
-                <Button key={item} type="button" variant={type === item ? "default" : "secondary"} size="sm" onClick={() => setType(item)}>
-                  {item.toLowerCase()}
+                <Button key={item.type} type="button" variant={type === item.type ? "default" : "secondary"} size="sm" onClick={() => setType(item.type)}>
+                  {item.label}
                 </Button>
               ))}
             </div>
-            <Field name="title" label="Node title" placeholder="Scaled payment reconciliation platform" />
-            <Field name="organization" label="Company / context" placeholder="Acme Inc." />
-            <div className="space-y-2">
-              <Label htmlFor="summary">Reusable evidence</Label>
-              <Textarea id="summary" name="summary" placeholder="Built a reconciliation workflow that reduced finance review time by 42%..." required />
+            <div className="rounded-md border bg-accent/30 p-3 text-xs text-muted-foreground">
+              {selectedType.helper}
             </div>
-            <Field name="skills" label="Skills" placeholder="Next.js, PostgreSQL, leadership" />
-            <Field name="keywords" label="ATS keywords" placeholder="full stack, observability, payments" />
-            <Field name="tags" label="Tags" placeholder="backend, fintech, senior" />
+            {selectedType.fields.map((field) => <DynamicField key={field.name} field={field} />)}
             <Button disabled={pending} className="w-full">
               <Plus className="mr-2 h-4 w-4" />
               Add to universal resume
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Universal node library</CardTitle>
-          <CardDescription>Select nodes to assemble a focused resume for a role.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by skill, keyword, project, or company" />
-          </div>
-          <div className="grid gap-3">
-            {filtered.map((node) => (
-              <button
-                key={node.id}
-                type="button"
-                onClick={() => toggleNode(node.id)}
-                className="rounded-lg border bg-card p-4 text-left transition hover:border-primary"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary">{node.type.toLowerCase()}</Badge>
-                      {node.organization ? <span className="text-xs text-muted-foreground">{node.organization}</span> : null}
-                    </div>
-                    <h3 className="mt-2 font-medium">{node.title}</h3>
-                  </div>
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-md border ${selected.includes(node.id) ? "border-primary bg-primary text-primary-foreground" : ""}`}>
-                    {selected.includes(node.id) ? <Check className="h-4 w-4" /> : null}
-                  </span>
-                </div>
-                {node.summary ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{node.summary}</p> : null}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[...node.skills, ...node.keywords].slice(0, 8).map((item) => <Badge key={item} variant="outline">{item}</Badge>)}
-                </div>
-              </button>
-            ))}
-            {!filtered.length ? <p className="rounded-md border p-4 text-sm text-muted-foreground">No nodes yet. Add your first career node to build the master library.</p> : null}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-primary" />
-            Compose role resume
-          </CardTitle>
-          <CardDescription>Turn selected nodes into a focused resume draft.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={composeResume} className="space-y-4">
-            <Field name="resumeTitle" label="Resume title" placeholder="Senior Full Stack Engineer Resume" />
-            <Field name="targetRole" label="Target role" placeholder="Senior Full Stack Engineer" />
-            <div className="rounded-md border p-3 text-sm text-muted-foreground">
-              {selected.length} node{selected.length === 1 ? "" : "s"} selected
-            </div>
-            <Button disabled={pending || selected.length === 0} className="w-full">
-              <FilePlus2 className="mr-2 h-4 w-4" />
-              Create tailored resume
             </Button>
           </form>
         </CardContent>
@@ -211,13 +151,133 @@ export function UniversalResumeWorkspace({ initialNodes }: { initialNodes: Caree
   );
 }
 
-function Field({ name, label, placeholder }: { name: string; label: string; placeholder: string }) {
+function DynamicField({ field }: { field: FieldConfig }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} placeholder={placeholder} required={name === "title" || name === "resumeTitle"} />
+      <Label htmlFor={field.name}>{field.label}</Label>
+      {field.kind === "textarea" ? (
+        <Textarea id={field.name} name={field.name} placeholder={field.placeholder} required={field.required} />
+      ) : (
+        <Input id={field.name} name={field.name} placeholder={field.placeholder} required={field.required} />
+      )}
     </div>
   );
+}
+
+function buildNodePayload(type: CareerNodeType, formData: FormData) {
+  const get = (name: string) => String(formData.get(name) ?? "").trim();
+  const bullets = get("bullets").split(/\n+/).map((item) => item.trim()).filter(Boolean);
+  const content = Object.fromEntries(Array.from(formData.entries()).map(([key, value]) => [key, String(value).trim()]));
+
+  switch (type) {
+    case "SKILL": {
+      const domain = get("domain");
+      const skillName = get("skillName");
+      return {
+        title: skillName,
+        organization: domain || null,
+        summary: `${skillName}${domain ? ` in ${domain}` : ""}`,
+        content,
+        skills: [skillName].filter(Boolean),
+        keywords: [skillName, domain].filter(Boolean),
+        tags: [domain].filter(Boolean)
+      };
+    }
+    case "PROJECT": {
+      const title = get("projectName");
+      return {
+        title,
+        organization: get("timeline") || null,
+        summary: bullets.join(" "),
+        content: { ...content, bullets },
+        skills: [],
+        keywords: splitList(get("projectName")),
+        tags: splitList(get("timeline"))
+      };
+    }
+    case "EDUCATION":
+      return {
+        title: get("course"),
+        organization: get("college") || null,
+        summary: [get("college"), get("course"), get("cgpa"), get("graduationDate")].filter(Boolean).join(" | "),
+        content,
+        skills: [],
+        keywords: splitList(`${get("course")}, ${get("college")}`),
+        tags: ["education"]
+      };
+    case "CONTACT_INFO":
+      return {
+        title: get("email") || "Contact info",
+        organization: get("location") || null,
+        summary: [get("email"), get("phone"), get("location"), get("portfolio")].filter(Boolean).join(" | "),
+        content,
+        skills: [],
+        keywords: [],
+        tags: ["contact"]
+      };
+    case "SOCIAL_HANDLE":
+    case "CODING_PROFILE":
+      return {
+        title: get("platform"),
+        organization: get("url") || null,
+        summary: [get("platform"), get("url"), get("stats")].filter(Boolean).join(" | "),
+        content,
+        skills: [],
+        keywords: [get("platform")].filter(Boolean),
+        tags: [type === "CODING_PROFILE" ? "coding" : "social"]
+      };
+    case "RELEVANT_COURSEWORK":
+      return {
+        title: "Relevant Coursework",
+        organization: null,
+        summary: get("courses"),
+        content: { ...content, courses: splitList(get("courses")) },
+        skills: splitList(get("courses")),
+        keywords: splitList(get("courses")),
+        tags: ["coursework"]
+      };
+    case "ACHIEVEMENT":
+      return {
+        title: get("achievement"),
+        organization: get("metric") || null,
+        summary: [get("achievement"), get("metric"), get("context")].filter(Boolean).join(" - "),
+        content,
+        skills: [],
+        keywords: splitList(`${get("achievement")}, ${get("metric")}`),
+        tags: ["achievement"]
+      };
+    case "POSITION_OF_RESPONSIBILITY":
+    case "EXPERIENCE":
+      return {
+        title: get("role"),
+        organization: get("organization") || get("company") || null,
+        summary: bullets.join(" "),
+        content: { ...content, bullets },
+        skills: [],
+        keywords: splitList(`${get("role")}, ${get("organization")}, ${get("company")}`),
+        tags: [type === "EXPERIENCE" ? "experience" : "responsibility"]
+      };
+    case "CERTIFICATION":
+      return {
+        title: get("certificateName"),
+        organization: get("issuer") || null,
+        summary: [get("certificateName"), get("issuer"), get("credentialLink")].filter(Boolean).join(" | "),
+        content,
+        skills: [],
+        keywords: splitList(`${get("certificateName")}, ${get("issuer")}`),
+        tags: ["certificate"]
+      };
+    default:
+      return {
+        title: get("title"),
+        organization: null,
+        summary: get("details"),
+        content,
+        skills: [],
+        keywords: [],
+        tags: ["custom"]
+      };
+  }
 }
 
 function splitList(value: string) {

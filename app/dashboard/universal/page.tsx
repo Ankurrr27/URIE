@@ -1,31 +1,26 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { UniversalResumeWorkspace } from "@/components/universal/universal-resume-workspace";
-import type { CareerNode } from "@/types/career-node";
 
 export default async function UniversalResumePage() {
-  const session = await auth();
-  const nodes = await prisma.careerNode.findMany({
-    where: { userId: session!.user.id },
-    orderBy: [{ type: "asc" }, { updatedAt: "desc" }]
-  });
-
-  const serialized = nodes.map((node) => ({
-    ...node,
-    startDate: node.startDate?.toISOString() ?? null,
-    endDate: node.endDate?.toISOString() ?? null,
-    updatedAt: node.updatedAt.toISOString()
-  })) as CareerNode[];
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Universal Resume</h1>
-        <p className="text-sm text-muted-foreground">
-          Build a master node library of everything you have done, then compose targeted resumes by selecting the right evidence.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Add career node</h1>
+          <p className="text-sm text-muted-foreground">
+            Save one reusable career fact at a time. Manage, color, star, and compose nodes from the dedicated tabs.
+          </p>
+        </div>
+        <Button asChild variant="secondary">
+          <Link href="/dashboard/universal/view">
+            <Eye className="mr-2 h-4 w-4" />
+            View universal resume
+          </Link>
+        </Button>
       </div>
-      <UniversalResumeWorkspace initialNodes={serialized} />
+      <UniversalResumeWorkspace />
     </div>
   );
 }

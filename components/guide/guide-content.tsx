@@ -14,7 +14,7 @@ const sections = [
   {
     id: "ats",
     title: "How ATS scoring works",
-    body: "ResuBee extracts text from your PDF, compares it to job-description keywords, checks structure signals, and highlights missing role language."
+    body: "URIE extracts text from your PDF, compares it to job-description keywords, checks structure signals, and highlights missing role language."
   },
   {
     id: "improve",

@@ -92,7 +92,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             </Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
-            {isSignup ? "Already have an account?" : "New to ResuBee?"}{" "}
+            {isSignup ? "Already have an account?" : "New to URIE?"}{" "}
             <Link className="text-primary underline-offset-4 hover:underline" href={isSignup ? "/login" : "/signup"}>
               {isSignup ? "Sign in" : "Create account"}
             </Link>

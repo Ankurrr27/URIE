@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "ResuBee | AI Resume Builder and ATS Analyzer",
+  title: "URIE | Universal Resume Intelligence Engine",
   description: "Build ATS-ready resumes, analyze job fit, and optimize career documents with AI."
 };
 
