@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -57,7 +57,7 @@ enum CareerNodeType {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
   email         String    @unique
   emailVerified DateTime?
@@ -82,8 +82,8 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
   type              String
   provider          String
   providerAccountId String
@@ -102,9 +102,9 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken String   @unique
-  userId       String
+  userId       String   @db.ObjectId
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -113,6 +113,7 @@ model Session {
 }
 
 model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   token      String   @unique
   expires    DateTime
@@ -122,9 +123,9 @@ model VerificationToken {
 }
 
 model Resume {
-  id          String       @id @default(cuid())
-  userId      String
-  templateId  String?
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String       @db.ObjectId
+  templateId  String?      @db.ObjectId
   title       String
   slug        String
   status      ResumeStatus @default(DRAFT)
@@ -145,9 +146,9 @@ model Resume {
 }
 
 model ResumeSection {
-  id        String      @id @default(cuid())
-  resumeId  String
-  sourceNodeId String?
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  resumeId  String      @db.ObjectId
+  sourceNodeId String?   @db.ObjectId
   type      SectionType
   title     String
   content   Json
@@ -165,8 +166,8 @@ model ResumeSection {
 }
 
 model CareerNode {
-  id            String         @id @default(cuid())
-  userId        String
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String         @db.ObjectId
   type          CareerNodeType
   title         String
   organization  String?
@@ -194,7 +195,7 @@ model CareerNode {
 }
 
 model Template {
-  id          String           @id @default(cuid())
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   slug        String           @unique
   category    TemplateCategory
@@ -211,8 +212,8 @@ model Template {
 }
 
 model JobDescription {
-  id        String   @id @default(cuid())
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   title     String
   company   String?
   content   String
@@ -228,10 +229,10 @@ model JobDescription {
 }
 
 model AtsScore {
-  id               String   @id @default(cuid())
-  userId           String
-  resumeId         String?
-  jobDescriptionId String?
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String   @db.ObjectId
+  resumeId         String?  @db.ObjectId
+  jobDescriptionId String?  @db.ObjectId
   score            Int
   matchedKeywords  String[]
   missingKeywords  String[]

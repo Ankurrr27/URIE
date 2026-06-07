@@ -85,16 +85,16 @@ export function DashboardShell({
       initial={false}
       animate={{ width: collapsed ? 84 : 280 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className="flex h-full flex-col border-r bg-card/95 p-3 shadow-sm backdrop-blur-xl"
+      className={cn("flex h-full flex-col border-r bg-card/95 shadow-sm backdrop-blur-xl", collapsed ? "p-2" : "p-3")}
       aria-label="Dashboard navigation"
     >
-      <div className={cn("mb-2 flex items-center", collapsed ? "justify-center" : "justify-end")}>
-        <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+      <div className={cn("flex items-center", collapsed ? "mb-1 justify-center" : "mb-2 justify-end")}>
+        <Button variant="ghost" size="icon" className={cn("hidden md:inline-flex", collapsed && "h-8 w-8")} onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
           <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
         </Button>
       </div>
 
-      <Link href="/dashboard/profile" className={cn("mb-3 flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent focus-ring", collapsed && "justify-center")}>
+      <Link href="/dashboard/profile" className={cn("flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent focus-ring", collapsed ? "mb-2 justify-center px-1 py-1.5" : "mb-3")}>
         <UserAvatar image={image} name={name ?? email} size="md" />
         {!collapsed ? (
           <div className="min-w-0">
@@ -103,13 +103,13 @@ export function DashboardShell({
           </div>
         ) : null}
       </Link>
-      <Separator className="mb-3" />
+      <Separator className={collapsed ? "mb-2" : "mb-3"} />
 
-      <nav className="flex-1 space-y-5 overflow-y-auto px-1">
+      <nav className={cn("flex-1 overflow-y-auto px-1", collapsed ? "space-y-2" : "space-y-5")}>
         {navGroups.map((group) => (
           <div key={group.title}>
             {!collapsed ? <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{group.title}</p> : null}
-            <div className="space-y-1">
+            <div className={collapsed ? "space-y-0.5" : "space-y-1"}>
               {group.items.map((item) => {
                 const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
                 return (
@@ -118,9 +118,9 @@ export function DashboardShell({
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "group flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground outline-none transition hover:bg-accent/80 hover:text-foreground focus-ring",
+                      "group flex items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground outline-none transition hover:bg-accent/80 hover:text-foreground focus-ring",
                       active && "bg-primary/10 text-primary ring-1 ring-primary/20 soft-ring",
-                      collapsed && "justify-center px-2"
+                      collapsed ? "h-9 justify-center px-2" : "h-10"
                     )}
                     aria-current={active ? "page" : undefined}
                     title={collapsed ? item.label : undefined}
@@ -135,9 +135,9 @@ export function DashboardShell({
         ))}
       </nav>
 
-      <Separator className="my-3" />
+      <Separator className={collapsed ? "my-2" : "my-3"} />
       <form action={signOutAction}>
-        <Button variant="ghost" className={cn("w-full justify-start", collapsed && "justify-center px-2")} title={collapsed ? "Sign out" : undefined}>
+        <Button variant="ghost" className={cn("w-full justify-start", collapsed && "h-9 justify-center px-2")} title={collapsed ? "Sign out" : undefined}>
           <LogOut className="h-4 w-4" />
           {!collapsed ? <span className="ml-2">Sign out</span> : null}
         </Button>
@@ -167,7 +167,7 @@ export function DashboardShell({
               <Menu className="h-5 w-5" />
             </Button>
             <div>
-              <p className="text-sm font-medium">Career command center</p>
+              <p className="text-sm font-medium">URIE - Universal Resume Intelligence Engine</p>
               <p className="hidden text-xs text-muted-foreground sm:block">{email}</p>
             </div>
           </div>

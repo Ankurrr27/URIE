@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Briefcase, Check, FilePlus2, Search } from "lucide-react";
 import type { CareerNode } from "@/types/career-node";
+import { formatApiError } from "@/lib/client/api-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,32 +134,4 @@ function Field({ name, label, placeholder }: { name: string; label: string; plac
       <Input id={name} name={name} placeholder={placeholder} required />
     </div>
   );
-}
-
-function formatApiError(payload: unknown) {
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "error" in payload &&
-    payload.error &&
-    typeof payload.error === "object" &&
-    "details" in payload.error
-  ) {
-    const details = payload.error.details as { fieldErrors?: Record<string, string[]> };
-    const first = Object.entries(details.fieldErrors ?? {}).find(([, messages]) => messages.length);
-    if (first) return `${first[0]}: ${first[1][0]}`;
-  }
-
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "error" in payload &&
-    payload.error &&
-    typeof payload.error === "object" &&
-    "message" in payload.error
-  ) {
-    return String(payload.error.message);
-  }
-
-  return "Request failed";
 }

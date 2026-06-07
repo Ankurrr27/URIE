@@ -1,11 +1,11 @@
 import { Prisma, SectionType } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { createResumeRecord, findResumeForUser, findTemplateBySlug } from "@/repositories/resume-repository";
 
 export async function createResume(userId: string, data: { title: string; templateId?: string; contact?: Prisma.InputJsonObject; settings?: Prisma.InputJsonObject }) {
   const slug = `${slugify(data.title)}-${Date.now().toString(36)}`;
 
-  return prisma.resume.create({
+  return createResumeRecord({
     data: {
       userId,
       title: data.title,
@@ -20,8 +20,7 @@ export async function createResume(userId: string, data: { title: string; templa
           { type: SectionType.SKILLS, title: "Skills", content: { groups: [] }, position: 2 }
         ]
       }
-    },
-    include: { sections: { orderBy: { position: "asc" } }, template: true }
+    }
   });
 }
 
@@ -30,7 +29,7 @@ export async function createResumeFromTheme(userId: string, themeSlug: string) {
   const themeName = isSde ? "SDE One Page Resume" : themeSlug === "professional-corporate" ? "Professional Corporate Resume" : "Modern Minimal Resume";
   const slug = `${slugify(themeName)}-${Date.now().toString(36)}`;
 
-  const template = await prisma.template.findUnique({ where: { slug: themeSlug } });
+  const template = await findTemplateBySlug(themeSlug);
   const settings: Prisma.InputJsonObject = {
     theme: themeSlug === "professional-corporate" ? "corporate" : "modern",
     themeSlug,
@@ -59,7 +58,7 @@ export async function createResumeFromTheme(userId: string, themeSlug: string) {
         { type: SectionType.EDUCATION, title: "Education", content: { text: "" }, position: 4 }
       ];
 
-  return prisma.resume.create({
+  return createResumeRecord({
     data: {
       userId,
       title: themeName,
@@ -75,14 +74,10 @@ export async function createResumeFromTheme(userId: string, themeSlug: string) {
       },
       settings,
       sections: { create: sections }
-    },
-    include: { sections: { orderBy: { position: "asc" } }, template: true }
+    }
   });
 }
 
 export async function assertResumeOwner(userId: string, resumeId: string) {
-  return prisma.resume.findFirstOrThrow({
-    where: { id: resumeId, userId },
-    include: { sections: { orderBy: { position: "asc" } }, template: true }
-  });
+  return findResumeForUser(userId, resumeId);
 }

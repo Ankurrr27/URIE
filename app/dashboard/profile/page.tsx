@@ -1,11 +1,11 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { ProfileSettingsForm } from "@/components/profile/profile-settings-form";
 import { Badge } from "@/components/ui/badge";
+import { getProfileUser } from "@/repositories/user-repository";
 
 export default async function ProfilePage() {
   const session = await auth();
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: session!.user.id } });
+  const user = await getProfileUser(session!.user.id);
 
   return (
     <div className="max-w-4xl space-y-6">

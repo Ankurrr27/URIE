@@ -26,7 +26,7 @@ Full-stack engineer focused on reliable systems, product velocity, and measurabl
 \item Led migration to Kubernetes for services handling 2M monthly requests.
 \end{itemize}
 \section*{Skills}
-Next.js, TypeScript, PostgreSQL, Prisma, Kubernetes, observability
+Next.js, TypeScript, MongoDB, Prisma, Kubernetes, observability
 \end{document}`,
   "Research Resume": String.raw`\documentclass[10pt]{article}
 \usepackage[margin=0.75in]{geometry}

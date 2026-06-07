@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Camera, Loader2, Save } from "lucide-react";
+import { formatApiError } from "@/lib/client/api-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -62,7 +63,7 @@ export function ProfileSettingsForm({ user }: { user: ProfileUser }) {
           body: JSON.stringify(body)
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(formatApiError(payload));
+        if (!response.ok) throw new Error(formatApiError(payload, "Could not save profile"));
         toast.success("Profile saved");
         router.refresh();
       } catch (error) {
@@ -122,34 +123,6 @@ export function ProfileSettingsForm({ user }: { user: ProfileUser }) {
       </CardContent>
     </Card>
   );
-}
-
-function formatApiError(payload: unknown) {
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "error" in payload &&
-    payload.error &&
-    typeof payload.error === "object" &&
-    "details" in payload.error
-  ) {
-    const details = payload.error.details as { fieldErrors?: Record<string, string[]> };
-    const first = Object.entries(details.fieldErrors ?? {}).find(([, messages]) => messages.length);
-    if (first) return `${first[0]}: ${first[1][0]}`;
-  }
-
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "error" in payload &&
-    payload.error &&
-    typeof payload.error === "object" &&
-    "message" in payload.error
-  ) {
-    return String(payload.error.message);
-  }
-
-  return "Could not save profile";
 }
 
 function Field({

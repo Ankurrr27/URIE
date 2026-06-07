@@ -1,15 +1,14 @@
-import { auth } from "@/auth";
 import { ApiError, handleApiError, ok } from "@/lib/api-response";
-import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth/require-user";
 import { rateLimit } from "@/lib/rate-limit";
 import { analyzeResumeAgainstJob, extractKeywords } from "@/services/ats";
 import { extractTextFromPdf } from "@/services/pdf";
+import { saveAtsAnalysis } from "@/repositories/ats-repository";
 
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user) throw new ApiError(401, "Unauthorized", "UNAUTHORIZED");
-    rateLimit(`ats:${session.user.id}`, 20);
+    const user = await requireUser();
+    rateLimit(`ats:${user.id}`, 20);
 
     const formData = await request.formData();
     const file = formData.get("resume") as File | null;
@@ -24,21 +23,17 @@ export async function POST(request: Request) {
     const resumeText = await extractTextFromPdf(file);
     const analysis = analyzeResumeAgainstJob(resumeText, jobDescription);
 
-    const savedJob = await prisma.jobDescription.create({
-      data: {
-        userId: session.user.id,
+    const { atsScore, jobDescription: savedJob } = await saveAtsAnalysis({
+      userId: user.id,
+      resumeId,
+      job: {
+        userId: user.id,
         title: jobTitle,
         company,
         content: jobDescription,
         keywords: extractKeywords(jobDescription)
-      }
-    });
-
-    const atsScore = await prisma.atsScore.create({
-      data: {
-        userId: session.user.id,
-        resumeId,
-        jobDescriptionId: savedJob.id,
+      },
+      score: {
         resumeText,
         ...analysis
       }

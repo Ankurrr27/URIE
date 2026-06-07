@@ -1,6 +1,7 @@
 import { CareerNodeType, Prisma, SectionType } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { createCareerNodeRecord, listVisibleCareerNodesByIds } from "@/repositories/career-node-repository";
+import { createResumeRecord } from "@/repositories/resume-repository";
 
 const nodeToSectionType: Record<CareerNodeType, SectionType> = {
   CONTACT_INFO: SectionType.CUSTOM,
@@ -49,30 +50,21 @@ export function normalizeNodeInput(input: CareerNodeInput): Omit<Prisma.CareerNo
 }
 
 export async function createCareerNode(userId: string, input: CareerNodeInput) {
-  return prisma.careerNode.create({
-    data: {
-      ...normalizeNodeInput(input),
-      userId
-    }
+  return createCareerNodeRecord({
+    ...normalizeNodeInput(input),
+    userId
   });
 }
 
 export async function composeResumeFromNodes(userId: string, title: string, nodeIds: string[], targetRole?: string) {
-  const nodes = await prisma.careerNode.findMany({
-    where: {
-      id: { in: nodeIds },
-      userId,
-      visibility: true
-    },
-    orderBy: [{ type: "asc" }, { startDate: "desc" }, { updatedAt: "desc" }]
-  });
+  const nodes = await listVisibleCareerNodesByIds(userId, nodeIds);
 
   if (nodes.length !== nodeIds.length) {
     throw new Error("Some selected nodes were not found.");
   }
 
   const slug = `${slugify(title)}-${Date.now().toString(36)}`;
-  return prisma.resume.create({
+  return createResumeRecord({
     data: {
       userId,
       title,
@@ -102,7 +94,6 @@ export async function composeResumeFromNodes(userId: string, title: string, node
           visible: true
         }))
       }
-    },
-    include: { sections: { orderBy: { position: "asc" } } }
+    }
   });
 }

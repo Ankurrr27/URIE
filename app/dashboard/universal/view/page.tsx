@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { listCareerNodes } from "@/repositories/career-node-repository";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,10 +24,7 @@ const categoryOrder = [
 
 export default async function ViewUniversalResumePage() {
   const session = await auth();
-  const nodes = await prisma.careerNode.findMany({
-    where: { userId: session!.user.id },
-    orderBy: [{ type: "asc" }, { updatedAt: "desc" }]
-  });
+  const nodes = await listCareerNodes({ userId: session!.user.id });
 
   const grouped = categoryOrder
     .map((type) => ({

@@ -1,16 +1,12 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: resubee
-      POSTGRES_PASSWORD: resubee
-      POSTGRES_DB: resubee
+  mongo:
+    image: mongo:7
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - mongo-data:/data/db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U resubee -d resubee"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -18,17 +14,17 @@ services:
   app:
     build: .
     depends_on:
-      postgres:
+      mongo:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://resubee:resubee@postgres:5432/resubee?schema=public
+      DATABASE_URL: mongodb://mongo:27017/resubee
       AUTH_SECRET: replace-with-32-byte-random-secret
       AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       LATEX_COMPILE_ENABLED: "false"
     ports:
       - "3000:3000"
-    command: sh -c "npx prisma migrate deploy && node server.js"
+    command: sh -c "npx prisma db push && node server.js"
 
 volumes:
-  postgres-data:
+  mongo-data:

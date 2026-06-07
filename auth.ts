@@ -5,6 +5,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations";
 import { env } from "@/lib/env";
+import { findUserByEmail } from "@/repositories/user-repository";
+
+const sessionMaxAge = 90 * 24 * 60 * 60;
+const sessionUpdateAge = 12 * 60 * 60;
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
@@ -12,18 +16,18 @@ export const authConfig = {
   trustHost: true,
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
-    updateAge: 24 * 60 * 60
+    maxAge: sessionMaxAge,
+    updateAge: sessionUpdateAge
   },
   jwt: {
-    maxAge: 30 * 24 * 60 * 60
+    maxAge: sessionMaxAge
   },
   cookies: {
     sessionToken: {
       name: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
       options: {
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: sessionMaxAge,
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production"
@@ -43,9 +47,7 @@ export const authConfig = {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email.toLowerCase() }
-        });
+        const user = await findUserByEmail(parsed.data.email.toLowerCase());
 
         if (!user?.hashedPassword) return null;
         const valid = await bcrypt.compare(parsed.data.password, user.hashedPassword);

@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 import { handleApiError, ok, ApiError } from "@/lib/api-response";
 import { rateLimit } from "@/lib/rate-limit";
 import { signupSchema } from "@/lib/validations";
+import { createCredentialsUser, findUserByEmail } from "@/repositories/user-repository";
 
 export async function POST(request: Request) {
   try {
@@ -10,16 +10,13 @@ export async function POST(request: Request) {
     const body = signupSchema.parse(await request.json());
     const email = body.email.toLowerCase();
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await findUserByEmail(email);
     if (existing) throw new ApiError(409, "An account already exists for this email.", "EMAIL_EXISTS");
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        name: body.name,
-        hashedPassword: await bcrypt.hash(body.password, 12)
-      },
-      select: { id: true, email: true, name: true, role: true }
+    const user = await createCredentialsUser({
+      email,
+      name: body.name,
+      hashedPassword: await bcrypt.hash(body.password, 12)
     });
 
     return ok(user, 201);

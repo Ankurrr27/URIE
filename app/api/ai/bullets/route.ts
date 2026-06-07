@@ -1,14 +1,13 @@
-import { auth } from "@/auth";
-import { ApiError, handleApiError, ok } from "@/lib/api-response";
+import { handleApiError, ok } from "@/lib/api-response";
+import { requireUser } from "@/lib/auth/require-user";
 import { rateLimit } from "@/lib/rate-limit";
 import { aiPromptSchema } from "@/lib/validations";
 import { generateResumeAdvice } from "@/services/ai";
 
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user) throw new ApiError(401, "Unauthorized", "UNAUTHORIZED");
-    rateLimit(`ai:bullets:${session.user.id}`, 20);
+    const user = await requireUser();
+    rateLimit(`ai:bullets:${user.id}`, 20);
     const body = aiPromptSchema.parse(await request.json());
     return ok(await generateResumeAdvice(
       "You improve resume bullets using action verbs, measurable outcomes, and truthful framing. Preserve facts.",

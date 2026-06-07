@@ -2,24 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Activity, BarChart3, FileText, Gauge, Library, TrendingUp } from "lucide-react";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AtsScoreChart } from "@/components/dashboard/charts/ats-score-chart";
+import { getDashboardStats } from "@/repositories/dashboard-repository";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const userId = session.user.id;
-  const [resumes, analyses, latest, nodes, recentResumes] = await Promise.all([
-    prisma.resume.count({ where: { userId } }),
-    prisma.atsScore.count({ where: { userId } }),
-    prisma.atsScore.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 8 }),
-    prisma.careerNode.count({ where: { userId } }),
-    prisma.resume.findMany({ where: { userId }, orderBy: { updatedAt: "desc" }, take: 4, include: { _count: { select: { sections: true } } } })
-  ]);
+  const { resumes, analyses, latest, nodes, recentResumes } = await getDashboardStats(userId);
 
   const average = latest.length ? Math.round(latest.reduce((sum, item) => sum + item.score, 0) / latest.length) : 0;
   const profileCompletion = Math.min(100, resumes * 18 + nodes * 8 + analyses * 14);

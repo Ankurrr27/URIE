@@ -1,17 +1,13 @@
 import Link from "next/link";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createResumeAction } from "@/app/dashboard/resumes/resume-actions";
+import { listAllUserResumes } from "@/repositories/resume-repository";
 
 export default async function ResumesPage() {
   const session = await auth();
-  const resumes = await prisma.resume.findMany({
-    where: { userId: session!.user.id },
-    orderBy: { updatedAt: "desc" },
-    include: { template: true, _count: { select: { sections: true, atsScores: true } } }
-  });
+  const resumes = await listAllUserResumes(session!.user.id);
 
   return (
     <div className="space-y-6">

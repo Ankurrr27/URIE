@@ -12,7 +12,7 @@ ResuBee is intentionally a single full-stack Next.js codebase:
 - `lib/` shared auth, Prisma, validation, rate limiting, and response utilities
 - `services/` business logic for resumes, PDF parsing, ATS scoring, AI calls, and LaTeX
 - `store/` Zustand client state
-- `prisma/` PostgreSQL schema and seed data
+- `prisma/` MongoDB Prisma schema and seed data
 - `infra/k8s/` optional Kubernetes manifests
 
 ## Data Model
@@ -59,7 +59,7 @@ The service boundary in `services/ats.ts` is designed to be upgraded with embedd
 ## Recommended Libraries
 
 - `next-auth` and `@auth/prisma-adapter` for authentication
-- `prisma` and `@prisma/client` for PostgreSQL access
+- `prisma` and `@prisma/client` for MongoDB access
 - `zod` for validation
 - `zustand` for editor state
 - `pdf-parse` for PDF text extraction
@@ -81,16 +81,16 @@ npm install
 cp .env.example .env
 ```
 
-3. Start PostgreSQL:
+3. Start MongoDB:
 
 ```bash
-docker compose up -d postgres
+docker compose up -d mongo
 ```
 
-4. Run migrations and seed templates:
+4. Push the Prisma schema and seed templates:
 
 ```bash
-npm run db:migrate
+npm run db:push
 npm run db:seed
 ```
 
@@ -104,13 +104,13 @@ Open `http://localhost:3000`.
 
 ## Docker Deployment
 
-Build and run the single deployable application with PostgreSQL:
+Build and run the single deployable application with MongoDB:
 
 ```bash
 docker compose up --build
 ```
 
-For production, replace `AUTH_SECRET`, configure `AUTH_URL`, and use a managed PostgreSQL instance or a durable Postgres deployment.
+For production, replace `AUTH_SECRET`, configure `AUTH_URL`, and use MongoDB Atlas or another durable MongoDB deployment.
 
 ## Kubernetes
 
@@ -123,10 +123,10 @@ kubectl apply -f infra/k8s/service.yaml
 kubectl apply -f infra/k8s/ingress.yaml
 ```
 
-Run Prisma migrations as a release job or CI/CD step before rolling out a new image:
+Push the Prisma schema as a release job or CI/CD step before rolling out a new image:
 
 ```bash
-npx prisma migrate deploy
+npx prisma db push
 ```
 
 ## Production Notes

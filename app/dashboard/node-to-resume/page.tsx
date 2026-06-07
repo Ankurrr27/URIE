@@ -1,14 +1,11 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { NodeToResume } from "@/components/nodes/node-to-resume";
 import type { CareerNode } from "@/types/career-node";
+import { listRecentCareerNodes } from "@/repositories/career-node-repository";
 
 export default async function NodeToResumePage() {
   const session = await auth();
-  const nodes = await prisma.careerNode.findMany({
-    where: { userId: session!.user.id },
-    orderBy: [{ updatedAt: "desc" }]
-  });
+  const nodes = await listRecentCareerNodes(session!.user.id);
 
   const serialized = nodes.map((node) => ({
     ...node,
