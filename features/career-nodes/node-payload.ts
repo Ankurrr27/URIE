@@ -18,49 +18,10 @@ export function parseBullets(text: string): string[] {
   if (rawLines.length === 0) return [];
 
   const bulletRegex = /^[•*\-\u2022\u25E6\u25AA\u25AB]\s*/;
-  const hasBulletMarkers = rawLines.some(line => bulletRegex.test(line));
 
-  const bullets: string[] = [];
-  let currentBullet = "";
-
-  for (const line of rawLines) {
-    const isBulletLine = bulletRegex.test(line);
-    
-    // Determine if this line should be appended to the current bullet
-    let isContinuation = false;
-    if (currentBullet) {
-      if (hasBulletMarkers) {
-        isContinuation = !isBulletLine;
-      } else {
-        const clean = line.replace(/^[^a-zA-Z\d]*/, "");
-        if (clean.length === 0) {
-          isContinuation = true;
-        } else {
-          const firstChar = clean[0];
-          if (/^\d/.test(firstChar)) {
-            isContinuation = false;
-          } else {
-            isContinuation = firstChar === firstChar.toLowerCase() && firstChar !== firstChar.toUpperCase();
-          }
-        }
-      }
-    }
-
-    if (isContinuation) {
-      currentBullet += " " + (isBulletLine ? line.replace(bulletRegex, "") : line);
-    } else {
-      if (currentBullet) {
-        bullets.push(currentBullet);
-      }
-      currentBullet = isBulletLine ? line.replace(bulletRegex, "") : line;
-    }
-  }
-
-  if (currentBullet) {
-    bullets.push(currentBullet);
-  }
-
-  return bullets;
+  // Each non-empty line is its own bullet point.
+  // Strip leading bullet markers if present.
+  return rawLines.map(line => line.replace(bulletRegex, ""));
 }
 
 export function buildNodePayload(type: CareerNodeType, formData: FormData): CareerNodePayloadDraft {

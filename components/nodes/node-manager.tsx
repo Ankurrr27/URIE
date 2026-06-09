@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { parseBullets } from "@/features/career-nodes/node-payload";
+import { careerNodeFormConfigs } from "@/features/career-nodes/node-form-config";
 
 const colors = ["#0f8fa3", "#2563eb", "#16a34a", "#d97706", "#9333ea", "#dc2626", "#475569"];
 
@@ -22,7 +23,7 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
 
   // Fact editing states
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<Record<string, { title: string; organization: string; location: string; summary: string; skills: string }>>({});
+  const [editValues, setEditValues] = useState<Record<string, Record<string, string>>>({});
   const [savingNodeId, setSavingNodeId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -31,58 +32,153 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
     return nodes.filter((node) => [node.title, node.type, node.organization, node.summary, ...node.tags, ...node.skills].filter(Boolean).some((value) => String(value).toLowerCase().includes(needle)));
   }, [nodes, query]);
 
-  function startEdit(node: CareerNode) {
+  function getInitialFieldValues(node: CareerNode) {
     const content = typeof node.content === "string" ? JSON.parse(node.content) : (node.content || {});
-    const bullets = Array.isArray(content.bullets) ? content.bullets : [];
-    const initialSummary = bullets.length > 0 
-      ? bullets.join("\n") 
-      : (node.summary || "");
+    const config = careerNodeFormConfigs.find(c => c.type === node.type) || careerNodeFormConfigs[0];
+    
+    const values: Record<string, string> = {
+      location: node.location || "",
+      skills: Array.isArray(node.skills) ? node.skills.join(", ") : ""
+    };
 
+    for (const field of config.fields) {
+      if (content[field.name] !== undefined) {
+        if (Array.isArray(content[field.name])) {
+          values[field.name] = (content[field.name] as string[]).join("\n");
+        } else {
+          values[field.name] = String(content[field.name]);
+        }
+      } else {
+        // Fallback logic
+        if (field.name === "bullets") {
+          values[field.name] = node.summary || "";
+        } else if (["projectName", "course", "platform", "achievement", "role", "certificateName", "skillName", "title"].includes(field.name)) {
+          values[field.name] = node.title || "";
+        } else if (["timeline", "college", "company", "organization", "issuer", "domain"].includes(field.name)) {
+          values[field.name] = node.organization || "";
+        } else {
+          values[field.name] = "";
+        }
+      }
+    }
+
+    return values;
+  }
+
+  function startEdit(node: CareerNode) {
     setEditValues((current) => ({
       ...current,
-      [node.id]: {
-        title: node.title || "",
-        organization: node.organization || "",
-        location: node.location || "",
-        summary: initialSummary,
-        skills: Array.isArray(node.skills) ? node.skills.join(", ") : ""
-      }
+      [node.id]: getInitialFieldValues(node)
     }));
     setEditingId(node.id);
   }
 
   async function saveNodeDetails(id: string) {
     const vals = editValues[id];
-    if (!vals || !vals.title.trim()) {
-      toast.error("Title is required.");
+    if (!vals) {
+      toast.error("No edits found.");
       return;
     }
     setSavingNodeId(id);
     try {
       const node = nodes.find(n => n.id === id);
-      const originalContent = node?.content 
+      if (!node) throw new Error("Node not found.");
+
+      const type = node.type;
+      const getVal = (name: string) => (vals[name] ?? "").trim();
+
+      let title = node.title;
+      let organization = node.organization;
+      let summary = node.summary;
+      const originalContent = node.content 
         ? (typeof node.content === "string" ? JSON.parse(node.content) : node.content)
         : {};
+      
+      const newContent: Record<string, any> = { ...originalContent };
 
-      const isBulletType = ["PROJECT", "EXPERIENCE", "POSITION_OF_RESPONSIBILITY"].includes(node?.type || "");
-      const newBullets = isBulletType
-        ? parseBullets(vals.summary)
-        : undefined;
+      // Fill newContent from config fields
+      const config = careerNodeFormConfigs.find(c => c.type === type) || careerNodeFormConfigs[0];
+      for (const field of config.fields) {
+        if (field.name === "bullets") {
+          const bullets = parseBullets(getVal("bullets"));
+          newContent.bullets = bullets;
+          summary = bullets.join("\n");
+        } else {
+          newContent[field.name] = getVal(field.name);
+        }
+      }
 
-      const updatedContent = isBulletType
-        ? { ...originalContent, bullets: newBullets }
-        : originalContent;
+      // Sync to top-level DB fields based on type
+      switch (type) {
+        case "SKILL":
+          title = getVal("skillName");
+          organization = getVal("domain");
+          summary = `${title}${organization ? ` in ${organization}` : ""}`;
+          break;
+        case "PROJECT":
+          title = getVal("projectName");
+          organization = getVal("timeline");
+          break;
+        case "EDUCATION":
+          title = getVal("course");
+          organization = getVal("college");
+          summary = [organization, title, getVal("cgpa"), getVal("graduationDate")].filter(Boolean).join(" | ");
+          break;
+        case "CONTACT_INFO":
+          title = getVal("email") || "Contact info";
+          organization = getVal("location");
+          summary = [getVal("email"), getVal("phone"), getVal("location"), getVal("portfolio")].filter(Boolean).join(" | ");
+          break;
+        case "SOCIAL_HANDLE":
+        case "CODING_PROFILE":
+          title = getVal("platform");
+          organization = getVal("url");
+          summary = [getVal("platform"), getVal("url"), getVal("stats")].filter(Boolean).join(" | ");
+          break;
+        case "RELEVANT_COURSEWORK":
+          title = "Relevant Coursework";
+          organization = null;
+          summary = getVal("courses");
+          newContent.courses = getVal("courses").split(",").map(c => c.trim()).filter(Boolean);
+          break;
+        case "ACHIEVEMENT":
+          title = getVal("achievement");
+          organization = getVal("metric");
+          summary = [title, organization, getVal("context")].filter(Boolean).join(" - ");
+          break;
+        case "POSITION_OF_RESPONSIBILITY":
+        case "EXPERIENCE":
+          title = getVal("role");
+          organization = getVal("organization") || getVal("company");
+          break;
+        case "CERTIFICATION":
+          title = getVal("certificateName");
+          organization = getVal("issuer");
+          summary = [title, organization, getVal("credentialLink")].filter(Boolean).join(" | ");
+          break;
+        default:
+          title = getVal("title") || title;
+          summary = getVal("details") || summary;
+          break;
+      }
+
+      // Validate required title field
+      if (!title.trim()) {
+        toast.error("Required title/name field cannot be empty.");
+        setSavingNodeId(null);
+        return;
+      }
 
       const response = await fetch(`/api/career-nodes/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: vals.title,
-          organization: vals.organization,
-          location: vals.location,
-          summary: vals.summary,
-          skills: vals.skills.split(",").map((s) => s.trim()).filter(Boolean),
-          content: updatedContent
+          title,
+          organization,
+          location: getVal("location") || null,
+          summary,
+          skills: getVal("skills").split(",").map((s) => s.trim()).filter(Boolean),
+          content: newContent
         })
       });
       const payload = await response.json();
@@ -94,11 +190,11 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
           node.id === id
             ? {
                 ...node,
-                title: vals.title,
-                organization: vals.organization || null,
-                location: vals.location || null,
-                summary: vals.summary || null,
-                skills: vals.skills.split(",").map((s) => s.trim()).filter(Boolean),
+                title,
+                organization: organization || null,
+                location: getVal("location") || null,
+                summary: summary || null,
+                skills: getVal("skills").split(",").map((s) => s.trim()).filter(Boolean),
                 content: payload.data.content
               }
             : node
@@ -179,48 +275,61 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
                       
                       {editingId === node.id ? (
                         <div className="space-y-3 mt-3 text-xs leading-normal">
-                          <div className="grid gap-1">
-                            <Label className="text-[10px] text-muted-foreground font-semibold">Title</Label>
-                            <Input
-                              className="h-8 text-xs focus-ring"
-                              value={editValues[node.id]?.title ?? ""}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, [node.id]: { ...prev[node.id], title: e.target.value } }))}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <div className="grid gap-1">
-                              <Label className="text-[10px] text-muted-foreground font-semibold">Org / Employer</Label>
-                              <Input
-                                className="h-8 text-xs focus-ring"
-                                value={editValues[node.id]?.organization ?? ""}
-                                onChange={(e) => setEditValues(prev => ({ ...prev, [node.id]: { ...prev[node.id], organization: e.target.value } }))}
-                              />
-                            </div>
-                            <div className="grid gap-1">
-                              <Label className="text-[10px] text-muted-foreground font-semibold">Location</Label>
-                              <Input
-                                className="h-8 text-xs focus-ring"
-                                value={editValues[node.id]?.location ?? ""}
-                                onChange={(e) => setEditValues(prev => ({ ...prev, [node.id]: { ...prev[node.id], location: e.target.value } }))}
-                              />
-                            </div>
-                          </div>
-                          <div className="grid gap-1">
-                            <Label className="text-[10px] text-muted-foreground font-semibold">Details / Summary</Label>
-                            <Textarea
-                              className="min-h-16 text-xs focus-ring"
-                              value={editValues[node.id]?.summary ?? ""}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, [node.id]: { ...prev[node.id], summary: e.target.value } }))}
-                            />
-                          </div>
-                          <div className="grid gap-1">
-                            <Label className="text-[10px] text-muted-foreground font-semibold">Skills (comma separated)</Label>
-                            <Input
-                              className="h-8 text-xs focus-ring"
-                              value={editValues[node.id]?.skills ?? ""}
-                              onChange={(e) => setEditValues(prev => ({ ...prev, [node.id]: { ...prev[node.id], skills: e.target.value } }))}
-                            />
-                          </div>
+                          {(() => {
+                            const config = careerNodeFormConfigs.find(c => c.type === node.type) || careerNodeFormConfigs[0];
+                            return (
+                              <>
+                                {config.fields.map((field) => (
+                                  <div key={field.name} className="grid gap-1">
+                                    <Label className="text-[10px] text-muted-foreground font-semibold">
+                                      {field.label} {field.required && <span className="text-destructive">*</span>}
+                                    </Label>
+                                    {field.kind === "textarea" ? (
+                                      <Textarea
+                                        className="min-h-16 text-xs focus-ring"
+                                        value={editValues[node.id]?.[field.name] ?? ""}
+                                        onChange={(e) => setEditValues(prev => ({
+                                          ...prev,
+                                          [node.id]: { ...prev[node.id], [field.name]: e.target.value }
+                                        }))}
+                                        placeholder={field.placeholder}
+                                      />
+                                    ) : (
+                                      <Input
+                                        className="h-8 text-xs focus-ring"
+                                        value={editValues[node.id]?.[field.name] ?? ""}
+                                        onChange={(e) => setEditValues(prev => ({
+                                          ...prev,
+                                          [node.id]: { ...prev[node.id], [field.name]: e.target.value }
+                                        }))}
+                                        placeholder={field.placeholder}
+                                      />
+                                    )}
+                                  </div>
+                                ))}
+                                <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-dashed mt-2">
+                                  <div className="grid gap-1">
+                                    <Label className="text-[10px] text-muted-foreground font-semibold">Location</Label>
+                                    <Input
+                                      className="h-8 text-xs focus-ring"
+                                      value={editValues[node.id]?.location ?? ""}
+                                      onChange={(e) => setEditValues(prev => ({ ...prev, [node.id]: { ...prev[node.id], location: e.target.value } }))}
+                                      placeholder="City, Country"
+                                    />
+                                  </div>
+                                  <div className="grid gap-1">
+                                    <Label className="text-[10px] text-muted-foreground font-semibold">Skills (comma separated)</Label>
+                                    <Input
+                                      className="h-8 text-xs focus-ring"
+                                      value={editValues[node.id]?.skills ?? ""}
+                                      onChange={(e) => setEditValues(prev => ({ ...prev, [node.id]: { ...prev[node.id], skills: e.target.value } }))}
+                                      placeholder="React, Node.js"
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       ) : (
                         <>

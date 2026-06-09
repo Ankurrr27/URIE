@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Activity,
   ArrowRight,
+  Bold,
   Bot,
   Brain,
   Check,
@@ -16,6 +17,8 @@ import {
   FileCode2,
   FileText,
   GripVertical,
+  Italic,
+  Link2,
   Loader2,
   Plus,
   PlusCircle,
@@ -23,6 +26,7 @@ import {
   Settings2,
   Sparkles,
   Trash2,
+  Underline,
   X,
   XCircle
 } from "lucide-react";
@@ -36,6 +40,51 @@ import { Label } from "@/components/ui/label";
 import { ResumePreview } from "@/components/resume/resume-preview";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+// ── Format helpers ──────────────────────────────────────────────
+function applyFormat(
+  ref: React.RefObject<HTMLTextAreaElement | null>,
+  marker: "bold" | "italic" | "underline" | "link",
+  onChange: (val: string) => void
+) {
+  const el = ref.current;
+  if (!el) return;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const selected = el.value.slice(start, end) || "text";
+  let wrapped = selected;
+  if (marker === "bold") wrapped = `**${selected}**`;
+  else if (marker === "italic") wrapped = `*${selected}*`;
+  else if (marker === "underline") wrapped = `__${selected}__`;
+  else if (marker === "link") wrapped = `[${selected}](url)`;
+  const newVal = el.value.slice(0, start) + wrapped + el.value.slice(end);
+  onChange(newVal);
+  // Restore cursor after state update
+  requestAnimationFrame(() => {
+    el.focus();
+    el.setSelectionRange(start + wrapped.length, start + wrapped.length);
+  });
+}
+
+function FormatBar({ textareaRef, onChange }: { textareaRef: React.RefObject<HTMLTextAreaElement | null>; onChange: (val: string) => void }) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-t-md border border-b-0 bg-muted/40 px-1.5 py-1">
+      <button type="button" title="Bold (wraps selection in **bold**)" className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" onClick={() => applyFormat(textareaRef, "bold", onChange)}>
+        <Bold className="h-3 w-3" />
+      </button>
+      <button type="button" title="Italic (wraps selection in *italic*)" className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" onClick={() => applyFormat(textareaRef, "italic", onChange)}>
+        <Italic className="h-3 w-3" />
+      </button>
+      <button type="button" title="Underline (wraps selection in __underline__)" className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" onClick={() => applyFormat(textareaRef, "underline", onChange)}>
+        <Underline className="h-3 w-3" />
+      </button>
+      <div className="mx-1 h-3.5 w-px bg-border" />
+      <button type="button" title="Insert link [text](url)" className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" onClick={() => applyFormat(textareaRef, "link", onChange)}>
+        <Link2 className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
 
 type CareerNode = {
   id: string;
@@ -123,46 +172,51 @@ export function ResumeEditor({ resume }: { resume: Resume }) {
 
   // LaTeX Export
   function exportToLatex() {
-    const latex = `% URIE LaTeX Export Template
-\\documentclass[10pt]{article}
-\\usepackage[margin=0.7in]{geometry}
-\\usepackage{enumitem}
-\\begin{document}
-\\begin{center}
-{\\LARGE \\textbf{${current.contact.name || "Your Name"}}}\\\\\n` +
-      `${[current.contact.email, current.contact.phone, current.contact.location].filter(Boolean).join(" | ")}` +
-      `\n\\end{center}\n\n` +
-      current.sections
-        .filter((s) => s.visible)
-        .map((sec) => {
-          let body = "";
-          if (typeof sec.content.text === "string" && sec.content.text) {
-            const items = sec.content.text.split(/\n|•|\*/).map(i => i.trim()).filter(Boolean);
-            if (items.length > 1) {
-              body = `\\begin{itemize}[leftmargin=*]\n${items.map(item => `  \\item ${item}`).join('\n')}\n\\end{itemize}`;
-            } else {
-              body = sec.content.text;
-            }
-          } else if (typeof sec.content.summary === "string" && sec.content.summary) {
-            const items = sec.content.summary.split(/\n|•|\*/).map(i => i.trim()).filter(Boolean);
-            if (items.length > 1) {
-              body = `\\textbf{${sec.content.organization || ""}} \\hfill \\\\\n\\begin{itemize}[leftmargin=*]\n${items.map(item => `  \\item ${item}`).join('\n')}\n\\end{itemize}`;
-            } else {
-              body = `\\textbf{${sec.content.organization || ""}} \\hfill \\\\\n${sec.content.summary}`;
-            }
-            if (Array.isArray(sec.content.skills) && sec.content.skills.length) {
-              body += `\\\\\n\\textit{Skills:} ${sec.content.skills.join(", ")}`;
-            }
-          } else if (Array.isArray(sec.content.items) && sec.content.items.length) {
-            body = `\\begin{itemize}[leftmargin=*]\n${sec.content.items.map((item) => `\\item ${item}`).join("\n")}\n\\end{itemize}`;
+    function esc(s: string): string {
+      return String(s)
+        .replace(/\*\*(.+?)\*\*/g, "\\textbf{$1}")
+        .replace(/\*(.+?)\*/g, "\\textit{$1}")
+        .replace(/__(.+?)__/g, "\\underline{$1}")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "\\href{$2}{$1}")
+        .replace(/&/g, "\\&")
+        .replace(/%/g, "\\%")
+        .replace(/\$/g, "\\$")
+        .replace(/#/g, "\\#")
+        .replace(/~/g, "\\textasciitilde{}")
+        .replace(/\^/g, "\\textasciicircum{}");
+    }
+    const name = esc(String(current.contact.name || "Your Name"));
+    const contactParts = [current.contact.email, current.contact.phone, current.contact.location]
+      .filter((x): x is string => typeof x === "string" && x.length > 0)
+      .map(esc).join(" | ");
+    const sectionBodies = current.sections
+      .filter((s) => s.visible)
+      .map((sec) => {
+        let body = "";
+        if (typeof sec.content.text === "string" && sec.content.text) {
+          const items = sec.content.text.split("\n").map(i => i.trim()).filter(Boolean);
+          body = items.length > 1
+            ? `\\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]\n${items.map(i => `  \\item ${esc(i)}`).join("\n")}\n\\end{itemize}`
+            : esc(items[0] ?? "");
+        } else if (typeof sec.content.summary === "string") {
+          const org = esc(String(sec.content.organization || ""));
+          const loc = esc(String(sec.content.location || ""));
+          const lines = sec.content.summary.split("\n").map(i => i.trim()).filter(Boolean);
+          if (org) body += `\\textbf{${org}}${loc ? ` \\hfill ${loc}` : ""}\\\\` + "\n";
+          if (lines.length > 1) {
+            body += `\\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]\n${lines.map(i => `  \\item ${esc(i)}`).join("\n")}\n\\end{itemize}`;
+          } else if (lines.length === 1) { body += esc(lines[0]); }
+          if (Array.isArray(sec.content.skills) && (sec.content.skills as string[]).length) {
+            body += `\n\\textit{Skills: ${(sec.content.skills as string[]).map(esc).join(", ")}}`;
           }
-          return `\\section*{${sec.title}}\n${body}`;
-        })
-        .join("\n\n") +
-      `\n\\end{document}`;
-
+        } else if (Array.isArray(sec.content.items) && (sec.content.items as string[]).length) {
+          body = `\\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=2pt]\n${(sec.content.items as string[]).map(i => `  \\item ${esc(i)}`).join("\n")}\n\\end{itemize}`;
+        }
+        return `\\section*{${esc(sec.title)}}\n${body}`;
+      }).join("\n\n");
+    const latex = ["% URIE LaTeX Export","\\documentclass[10pt]{article}","\\usepackage[margin=0.65in]{geometry}","\\usepackage[hidelinks]{hyperref}","\\usepackage{enumitem}","\\begin{document}","\\begin{center}",`{\\LARGE \\textbf{${name}}}\\\\`,`\\small ${contactParts}`,"\\end{center}","",sectionBodies,"\\end{document}"].join("\n");
     window.localStorage.setItem("resubee-latex-source", latex);
-    toast.success("Formated to LaTeX! Redirecting to Editor...");
+    toast.success("Formatted to LaTeX! Redirecting to Editor�");
     router.push("/dashboard/latex");
   }
 
@@ -404,6 +458,21 @@ export function ResumeEditor({ resume }: { resume: Resume }) {
                   />
                 </label>
                 <label className="grid gap-1">
+                  <span className="text-[10px] text-muted-foreground">Resume Theme</span>
+                  <select
+                    className="h-7 rounded border bg-background px-1 text-[11px]"
+                    value={String(current.settings.theme ?? "modern")}
+                    onChange={(event) => updateSettings({ theme: event.target.value })}
+                  >
+                    <option value="modern">Modern</option>
+                    <option value="corporate">Corporate</option>
+                    <option value="aiml">AI / ML Engineer</option>
+                    <option value="management">Management Role</option>
+                  </select>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <label className="grid gap-1">
                   <span className="text-[10px] text-muted-foreground">Text Size</span>
                   <select
                     className="h-7 rounded border bg-background px-1 text-[11px]"
@@ -576,8 +645,10 @@ export function ResumeEditor({ resume }: { resume: Resume }) {
                         </Button>
                       </div>
                       <Textarea
-                        className="text-xs min-h-24 leading-normal"
+                        className="text-xs leading-normal resize-none overflow-hidden"
+                        style={{ minHeight: "2.5rem" }}
                         value={String(section.content.text ?? "")}
+                        onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }}
                         onChange={(e) => updateSection(section.id, { content: { text: e.target.value } })}
                         placeholder="Detail professional summaries, tags, or skills..."
                       />
@@ -609,8 +680,10 @@ export function ResumeEditor({ resume }: { resume: Resume }) {
                           </Button>
                         </div>
                         <Textarea
-                          className="text-xs min-h-16 leading-normal"
+                          className="text-xs leading-normal resize-none overflow-hidden"
+                          style={{ minHeight: "2.5rem" }}
                           value={String(section.content.summary ?? "")}
+                          onInput={(e) => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }}
                           onChange={(e) => updateSection(section.id, { content: { ...section.content, summary: e.target.value } })}
                           placeholder="Project achievement summary..."
                         />

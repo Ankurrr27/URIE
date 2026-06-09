@@ -3,23 +3,35 @@ import type { Resume } from "@/types/resume";
 export function ResumePreview({ resume }: { resume: Resume }) {
   const theme = String(resume.settings.theme ?? "modern");
   const textSize = String(resume.settings.textSize ?? "compact");
-  const accentColor = String(resume.settings.accentColor ?? "#0f8fa3");
+  const defaultAccents: Record<string, string> = {
+    modern: "#0f8fa3",
+    corporate: "#1e3a5f",
+    aiml: "#7c3aed",
+    management: "#1e40af"
+  };
+  const accentColor = String(resume.settings.accentColor ?? defaultAccents[theme] ?? "#0f8fa3");
   const underlineSections = resume.settings.underlineSections !== false;
   const underlineLinks = resume.settings.underlineLinks !== false;
   const sizeClass = {
-    compact: "text-[12px] leading-[1.45]",
+    compact: "text-[11.5px] leading-[1.4]",
     comfortable: "text-[13px] leading-[1.55]",
     large: "text-[14px] leading-[1.65]"
-  }[textSize] ?? "text-[12px] leading-[1.45]";
+  }[textSize] ?? "text-[11.5px] leading-[1.4]";
   const headerSize = {
-    compact: "text-2xl",
-    comfortable: "text-3xl",
+    compact: "text-xl",
+    comfortable: "text-2xl",
     large: "text-3xl"
-  }[textSize] ?? "text-2xl";
+  }[textSize] ?? "text-xl";
+
+  const themeClass = {
+    corporate: "resume-theme-corporate",
+    aiml: "resume-theme-aiml",
+    management: "resume-theme-management"
+  }[theme] ?? "resume-theme-modern";
 
   return (
     <div
-      className={`mx-auto aspect-[8.5/11] max-h-[1120px] w-full max-w-[860px] overflow-hidden rounded-lg border bg-white p-7 text-zinc-950 shadow-sm ${sizeClass} ${theme === "corporate" ? "resume-theme-corporate" : "resume-theme-modern"}`}
+      className={`mx-auto aspect-[8.5/11] max-h-[1120px] w-full max-w-[860px] overflow-hidden rounded-lg border bg-white p-6 text-zinc-950 shadow-sm ${sizeClass} ${themeClass}`}
       style={{ "--resume-accent": hexToHslTriplet(accentColor) } as React.CSSProperties}
     >
       <header className={underlineSections ? "border-b pb-3" : "pb-3"}>

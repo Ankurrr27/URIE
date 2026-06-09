@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createResumeAction } from "@/app/dashboard/resumes/resume-actions";
 import { listAllUserResumes } from "@/repositories/resume-repository";
+import { DeleteResumeButton } from "@/components/resume/delete-resume-button";
 
 export default async function ResumesPage() {
   const session = await auth();
@@ -23,8 +24,9 @@ export default async function ResumesPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {resumes.map((resume) => (
           <Card key={resume.id}>
-            <CardHeader>
-              <CardTitle className="text-base">{resume.title}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-base font-semibold truncate max-w-[80%]">{resume.title}</CardTitle>
+              <DeleteResumeButton resumeId={resume.id} resumeTitle={resume.title} />
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-sm text-muted-foreground">
