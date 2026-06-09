@@ -6,7 +6,6 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <Badge variant="secondary" className="mb-3">Settings</Badge>
         <h1 className="text-3xl font-semibold tracking-tight">Workspace Settings</h1>
         <p className="mt-2 text-sm text-muted-foreground">Control theme and workspace preferences.</p>
       </div>

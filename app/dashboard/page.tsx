@@ -27,7 +27,6 @@ export default async function DashboardPage() {
     <div className="space-y-5">
       <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
         <div>
-          <Badge variant="secondary" className="mb-2">Dashboard</Badge>
           <h1 className="text-2xl font-semibold tracking-tight">Welcome back, {session.user.name ?? "builder"}</h1>
           <p className="mt-1 text-xs text-muted-foreground">Track resume readiness, ATS progress, and your universal career library.</p>
         </div>

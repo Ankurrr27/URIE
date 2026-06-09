@@ -152,10 +152,14 @@ export function LatexWorkspace() {
   return (
     <div className={fullscreen ? "fixed inset-0 z-50 flex flex-col overflow-hidden bg-background" : ""}>
       <div className={fullscreen ? "sticky top-0 z-10 border-b bg-background/95 p-3 backdrop-blur-xl" : "mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"}>
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">LaTeX Resume Editor</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Edit LaTeX resumes with Monaco editor, standard snippets, and live PDF compilation.</p>
-        </div>
+        {fullscreen ? (
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">LaTeX Resume Editor</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Edit LaTeX resumes with Monaco editor, standard snippets, and live PDF compilation.</p>
+          </div>
+        ) : (
+          <div className="hidden sm:block" />
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className="h-8 flex items-center bg-muted/60 text-muted-foreground border"><Save className="mr-1 h-3 w-3" /> Autosaved {savedAt ?? "soon"}</Badge>
           <Button asChild size="sm" variant="outline" className="h-8 text-xs">

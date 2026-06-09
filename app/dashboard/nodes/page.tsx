@@ -22,9 +22,8 @@ export default async function NodesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <Badge variant="secondary" className="mb-3">Node Manager</Badge>
           <h1 className="text-3xl font-semibold tracking-tight">Manage resume nodes</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Star important nodes, color-code categories, and delete nodes you no longer need.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Star important nodes, color-code categories, customize node previews, and delete nodes you no longer need.</p>
         </div>
         <Button asChild variant="outline" className="border-primary/20 hover:bg-primary/5">
           <Link href="/dashboard/universal/extract">

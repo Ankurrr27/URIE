@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { parseBullets } from "@/features/career-nodes/node-payload";
 
 const colors = ["#0f8fa3", "#2563eb", "#16a34a", "#d97706", "#9333ea", "#dc2626", "#475569"];
 
@@ -31,13 +32,19 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
   }, [nodes, query]);
 
   function startEdit(node: CareerNode) {
+    const content = typeof node.content === "string" ? JSON.parse(node.content) : (node.content || {});
+    const bullets = Array.isArray(content.bullets) ? content.bullets : [];
+    const initialSummary = bullets.length > 0 
+      ? bullets.join("\n") 
+      : (node.summary || "");
+
     setEditValues((current) => ({
       ...current,
       [node.id]: {
         title: node.title || "",
         organization: node.organization || "",
         location: node.location || "",
-        summary: node.summary || "",
+        summary: initialSummary,
         skills: Array.isArray(node.skills) ? node.skills.join(", ") : ""
       }
     }));
@@ -52,6 +59,20 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
     }
     setSavingNodeId(id);
     try {
+      const node = nodes.find(n => n.id === id);
+      const originalContent = node?.content 
+        ? (typeof node.content === "string" ? JSON.parse(node.content) : node.content)
+        : {};
+
+      const isBulletType = ["PROJECT", "EXPERIENCE", "POSITION_OF_RESPONSIBILITY"].includes(node?.type || "");
+      const newBullets = isBulletType
+        ? parseBullets(vals.summary)
+        : undefined;
+
+      const updatedContent = isBulletType
+        ? { ...originalContent, bullets: newBullets }
+        : originalContent;
+
       const response = await fetch(`/api/career-nodes/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +81,8 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
           organization: vals.organization,
           location: vals.location,
           summary: vals.summary,
-          skills: vals.skills.split(",").map((s) => s.trim()).filter(Boolean)
+          skills: vals.skills.split(",").map((s) => s.trim()).filter(Boolean),
+          content: updatedContent
         })
       });
       const payload = await response.json();
@@ -76,7 +98,8 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
                 organization: vals.organization || null,
                 location: vals.location || null,
                 summary: vals.summary || null,
-                skills: vals.skills.split(",").map((s) => s.trim()).filter(Boolean)
+                skills: vals.skills.split(",").map((s) => s.trim()).filter(Boolean),
+                content: payload.data.content
               }
             : node
         )
@@ -213,7 +236,7 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
                 <CardContent className="space-y-4 pt-0">
                   {editingId !== node.id && (
                     <>
-                      <p className="line-clamp-3 text-sm text-muted-foreground whitespace-pre-wrap">{node.summary ?? "No summary"}</p>
+                      <NodeContentPreview node={node} />
                       {node.skills && node.skills.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {node.skills.map(skill => <Badge key={skill} variant="outline" className="text-[9px]">{skill}</Badge>)}
@@ -260,4 +283,145 @@ export function NodeManager({ initialNodes }: { initialNodes: CareerNode[] }) {
       </div>
     </div>
   );
+}
+
+function formatBulletText(text: string) {
+  if (!text) return "";
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={index} className="font-bold text-foreground">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
+function NodeContentPreview({ node }: { node: any }) {
+  const content = typeof node.content === "string" ? JSON.parse(node.content) : (node.content || {});
+
+  switch (node.type) {
+    case "PROJECT": {
+      const projectName = node.title;
+      const timeline = content.timeline || node.organization || "";
+      const liveLink = content.liveLink || "";
+      const bullets = parseBullets(
+        Array.isArray(content.bullets)
+          ? content.bullets.join("\n")
+          : (node.summary || "")
+      );
+
+      return (
+        <div className="space-y-1.5 font-serif text-[12px] text-foreground/90">
+          <div className="flex justify-between items-baseline gap-4">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-bold text-foreground text-[13px]">{projectName}</span>
+              {liveLink && (
+                <>
+                  <span className="text-muted-foreground font-normal">-</span>
+                  <a 
+                    href={liveLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-normal text-[12px] inline-flex items-center gap-0.5"
+                  >
+                    Click here
+                  </a>
+                </>
+              )}
+            </div>
+            {timeline && <span className="text-[11px] font-medium text-muted-foreground shrink-0">{timeline}</span>}
+          </div>
+          {bullets.length > 0 ? (
+            <ul className="list-disc pl-5 space-y-1 text-muted-foreground/90 leading-normal">
+              {bullets.map((b: string, i: number) => (
+                <li key={i}>{formatBulletText(b)}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground italic text-[11px]">No details provided.</p>
+          )}
+        </div>
+      );
+    }
+
+    case "EXPERIENCE": {
+      const role = node.title;
+      const company = node.organization || "";
+      const timeline = content.timeline || "";
+      const bullets = parseBullets(
+        Array.isArray(content.bullets)
+          ? content.bullets.join("\n")
+          : (node.summary || "")
+      );
+
+      return (
+        <div className="space-y-1.5 font-serif text-[12px] text-foreground/90">
+          <div className="flex justify-between items-baseline gap-4">
+            <div>
+              <span className="font-bold text-foreground text-[13px]">{role}</span>
+              {company && <span className="text-muted-foreground font-medium ml-1.5">| {company}</span>}
+            </div>
+            {timeline && <span className="text-[11px] font-medium text-muted-foreground shrink-0">{timeline}</span>}
+          </div>
+          {bullets.length > 0 ? (
+            <ul className="list-disc pl-5 space-y-1 text-muted-foreground/90 leading-normal">
+              {bullets.map((b: string, i: number) => (
+                <li key={i}>{formatBulletText(b)}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground italic text-[11px]">No experience details provided.</p>
+          )}
+        </div>
+      );
+    }
+
+    case "POSITION_OF_RESPONSIBILITY": {
+      const role = node.title;
+      const organization = node.organization || "";
+      const timeline = content.timeline || "";
+      const bullets = parseBullets(
+        Array.isArray(content.bullets)
+          ? content.bullets.join("\n")
+          : (node.summary || "")
+      );
+
+      return (
+        <div className="space-y-1.5 font-serif text-[12px] text-foreground/90">
+          <div className="flex justify-between items-baseline gap-4">
+            <div>
+              <span className="font-bold text-foreground text-[13px]">{role}</span>
+              {organization && <span className="text-muted-foreground font-medium ml-1.5">| {organization}</span>}
+            </div>
+            {timeline && <span className="text-[11px] font-medium text-muted-foreground shrink-0">{timeline}</span>}
+          </div>
+          {bullets.length > 0 ? (
+            <ul className="list-disc pl-5 space-y-1 text-muted-foreground/90 leading-normal">
+              {bullets.map((b: string, i: number) => (
+                <li key={i}>{formatBulletText(b)}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground italic text-[11px]">No details provided.</p>
+          )}
+        </div>
+      );
+    }
+
+    default: {
+      return (
+        <div className="space-y-1.5 font-serif text-[12px] text-foreground/90">
+          <div className="flex justify-between items-baseline gap-3">
+            <span className="font-bold text-foreground text-[13px]">{node.title}</span>
+            {node.organization && <span className="text-[11px] font-medium text-muted-foreground">{node.organization}</span>}
+          </div>
+          {node.summary && <p className="text-muted-foreground/95 whitespace-pre-wrap leading-normal">{node.summary}</p>}
+        </div>
+      );
+    }
+  }
 }

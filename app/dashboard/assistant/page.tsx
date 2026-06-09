@@ -84,7 +84,6 @@ export default function AssistantPage() {
   return (
     <div className="space-y-4 max-w-4xl">
       <div>
-        <Badge variant="secondary" className="mb-2">AI Assistant</Badge>
         <h1 className="text-2xl font-semibold tracking-tight">Resume AI Assistant</h1>
         <p className="mt-1 text-xs text-muted-foreground">Use our AI suggestions to polish achievement bullets, generate summaries, and identify relevant keywords.</p>
       </div>

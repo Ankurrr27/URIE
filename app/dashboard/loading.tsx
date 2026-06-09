@@ -1,19 +1,23 @@
-import { Loader2 } from "lucide-react";
-
 export default function DashboardLoading() {
   return (
-    <div className="flex h-[400px] w-full flex-col items-center justify-center">
-      <div className="flex flex-col items-center space-y-3">
-        <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent-foreground/80 shadow-xs">
-          <svg className="h-5.5 w-5.5 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <div className="flex h-[calc(100vh-140px)] w-full flex-col items-center justify-center">
+      <div className="flex flex-col items-center space-y-4">
+        {/* Brand Logo Container */}
+        <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent-foreground shadow-md shadow-primary/20">
+          <svg className="h-7 w-7 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5z" />
             <path d="M2 17l10 5 10-5" />
             <path d="M2 12l10 5 10-5" />
           </svg>
+          <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-background animate-pulse" />
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-          <span>Retrieving credentials...</span>
+
+        {/* Loading message */}
+        <p className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase">Loading workspace...</p>
+
+        {/* Overleaf-style Infinite Progress Bar */}
+        <div className="relative h-[3px] w-24 overflow-hidden rounded-full bg-muted/40">
+          <div className="absolute inset-y-0 left-0 w-full bg-primary origin-left animate-infinite-progress rounded-full" />
         </div>
       </div>
     </div>

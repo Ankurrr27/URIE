@@ -1,9 +1,18 @@
 import Link from "next/link";
-import { Eye, Sparkles } from "lucide-react";
+import { redirect } from "next/navigation";
+import { Sparkles } from "lucide-react";
+import { auth } from "@/auth";
+import { listCareerNodes } from "@/repositories/career-node-repository";
 import { Button } from "@/components/ui/button";
 import { UniversalResumeWorkspace } from "@/components/universal/universal-resume-workspace";
 
 export default async function UniversalResumePage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const rawNodes = await listCareerNodes({ userId: session.user.id });
+  const nodes = JSON.parse(JSON.stringify(rawNodes));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -20,15 +29,9 @@ export default async function UniversalResumePage() {
               Auto-extract facts
             </Link>
           </Button>
-          <Button asChild variant="secondary">
-            <Link href="/dashboard/universal/view">
-              <Eye className="mr-2 h-4 w-4" />
-              View universal resume
-            </Link>
-          </Button>
         </div>
       </div>
-      <UniversalResumeWorkspace />
+      <UniversalResumeWorkspace initialNodes={nodes} />
     </div>
   );
 }

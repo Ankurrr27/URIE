@@ -14,7 +14,6 @@ export default function TemplatesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Badge variant="secondary" className="mb-3">Templates</Badge>
         <h1 className="text-3xl font-semibold tracking-tight">One-page resume themes</h1>
         <p className="mt-2 text-sm text-muted-foreground">Pick a theme to create a blank resume and open the editor immediately.</p>
       </div>
