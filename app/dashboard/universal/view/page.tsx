@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, Plus } from "lucide-react";
 import { auth } from "@/auth";
 import { listCareerNodes } from "@/repositories/career-node-repository";
@@ -24,7 +25,8 @@ const categoryOrder = [
 
 export default async function ViewUniversalResumePage() {
   const session = await auth();
-  const nodes = await listCareerNodes({ userId: session!.user.id });
+  if (!session?.user) redirect("/login");
+  const nodes = await listCareerNodes({ userId: session.user.id });
 
   const grouped = categoryOrder
     .map((type) => ({
@@ -60,7 +62,7 @@ export default async function ViewUniversalResumePage() {
       {grouped.length ? (
         <div className="space-y-4">
           {grouped.map((group) => (
-            <Card key={group.type} className="surface-panel">
+            <Card key={group.type} className="border-0 sm:border bg-transparent sm:bg-card/90 shadow-none sm:shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">{group.label}</CardTitle>
               </CardHeader>
@@ -89,7 +91,7 @@ export default async function ViewUniversalResumePage() {
           ))}
         </div>
       ) : (
-        <Card className="surface-panel">
+        <Card className="border-0 sm:border bg-transparent sm:bg-card/90 shadow-none sm:shadow-sm">
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <p className="text-sm text-muted-foreground">No universal resume nodes yet.</p>
             <Button asChild>

@@ -20,19 +20,19 @@ export function ThemeToggle() {
   if (!mounted) return <Button aria-label="Theme loading" variant="ghost" size="icon" disabled />;
 
   return (
-    <div className="flex rounded-md border bg-card p-1" role="group" aria-label="Theme">
+    <div className="flex rounded-md bg-muted/40 p-0.5 border-0" role="group" aria-label="Theme">
       {modes.map((mode) => (
         <Button
           key={mode.value}
           type="button"
           variant={theme === mode.value ? "secondary" : "ghost"}
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 rounded-sm"
           onClick={() => setTheme(mode.value)}
           aria-label={`Use ${mode.label} theme`}
           title={mode.label}
         >
-          <mode.icon className="h-4 w-4" />
+          <mode.icon className="h-3.5 w-3.5" />
         </Button>
       ))}
     </div>

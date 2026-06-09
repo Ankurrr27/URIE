@@ -61,15 +61,102 @@ function LinkLine({ contact, underline }: { contact: Record<string, unknown>; un
   );
 }
 
+function formatRichText(text: string) {
+  if (!text) return "";
+  
+  // Split by URLs matching http/https or markdown bold **text**
+  const tokenRegex = /(https?:\/\/[^\s]+)|(\*\*[^*]+\*\*)/g;
+  const parts = text.split(tokenRegex);
+  
+  return parts.map((part, index) => {
+    if (!part) return null;
+    
+    // Check if it's a URL
+    if (part.startsWith("http://") || part.startsWith("https://")) {
+      const cleanUrl = part.replace(/[.,;:)\]]+$/, "");
+      const trailing = part.slice(cleanUrl.length);
+      return (
+        <span key={index}>
+          <a
+            href={cleanUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:opacity-85 transition-opacity"
+            style={{ color: "hsl(var(--resume-accent))" }}
+          >
+            {cleanUrl}
+          </a>
+          {trailing}
+        </span>
+      );
+    }
+    
+    // Check if it's bold
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const content = part.slice(2, -2);
+      return (
+        <strong key={index} className="font-bold">
+          {content}
+        </strong>
+      );
+    }
+    
+    // Normal text
+    return <span key={index}>{part}</span>;
+  });
+}
+
 function SectionContent({ content }: { content: Record<string, unknown> }) {
-  if (typeof content.text === "string") return <p>{content.text || "Add content..."}</p>;
+  if (typeof content.text === "string") {
+    const lines = content.text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length > 1) {
+      return (
+        <ul className="list-disc space-y-1 pl-4 text-[0.95em] text-zinc-700 leading-relaxed">
+          {lines.map((line, idx) => (
+            <li key={idx} className="marker:text-zinc-400">
+              {formatRichText(line)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    return <p className="text-[0.95em] text-zinc-700 leading-relaxed whitespace-pre-wrap">{formatRichText(content.text) || "Add content..."}</p>;
+  }
   if (typeof content.summary === "string") {
+    const lines = content.summary
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
     return (
-      <div className="space-y-2">
-        {content.organization ? <p className="font-semibold">{String(content.organization)}</p> : null}
-        <p>{content.summary}</p>
+      <div className="space-y-1">
+        {content.organization ? (
+          <div className="flex justify-between items-start">
+            <p className="font-semibold">{String(content.organization)}</p>
+            {content.location ? <p className="text-xs text-zinc-500 font-medium">{String(content.location)}</p> : null}
+          </div>
+        ) : null}
+        
+        {lines.length > 1 ? (
+          <ul className="list-disc space-y-1 pl-4 text-[0.95em] text-zinc-700 leading-relaxed">
+            {lines.map((line, idx) => (
+              <li key={idx} className="marker:text-zinc-400">
+                {formatRichText(line)}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[0.95em] text-zinc-700 leading-relaxed whitespace-pre-wrap">
+            {formatRichText(content.summary)}
+          </p>
+        )}
+        
         {Array.isArray(content.skills) && content.skills.length ? (
-          <p className="text-xs text-zinc-600">Skills: {content.skills.join(", ")}</p>
+          <p className="text-xs text-zinc-500 italic mt-1.5">Skills: {content.skills.join(", ")}</p>
         ) : null}
       </div>
     );
@@ -78,7 +165,11 @@ function SectionContent({ content }: { content: Record<string, unknown> }) {
   if (items.length) {
     return (
       <ul className="list-disc space-y-1 pl-5">
-        {items.map((item, index) => <li key={index}>{typeof item === "string" ? item : JSON.stringify(item)}</li>)}
+        {items.map((item, index) => (
+          <li key={index} className="whitespace-pre-wrap">
+            {typeof item === "string" ? formatRichText(item) : JSON.stringify(item)}
+          </li>
+        ))}
       </ul>
     );
   }

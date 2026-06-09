@@ -56,7 +56,7 @@ export function NodeToResume({ initialNodes }: { initialNodes: CareerNode[] }) {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-      <Card className="surface-panel">
+      <Card className="border-0 sm:border bg-transparent sm:bg-card/90 shadow-none sm:shadow-sm">
         <CardHeader>
           <CardTitle>Choose nodes</CardTitle>
           <CardDescription>Select the strongest evidence for the role, then create a focused resume draft.</CardDescription>
@@ -91,7 +91,7 @@ export function NodeToResume({ initialNodes }: { initialNodes: CareerNode[] }) {
                   </div>
                   {node.summary ? <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{node.summary}</p> : null}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {[...node.skills, ...node.keywords].slice(0, 8).map((item) => <Badge key={item} variant="outline">{item}</Badge>)}
+                    {Array.from(new Set([...node.skills, ...node.keywords])).slice(0, 8).map((item, idx) => <Badge key={`${item}-${idx}`} variant="outline">{item}</Badge>)}
                   </div>
                 </button>
               );
@@ -101,7 +101,7 @@ export function NodeToResume({ initialNodes }: { initialNodes: CareerNode[] }) {
         </CardContent>
       </Card>
 
-      <Card className="surface-panel h-fit xl:sticky xl:top-24">
+      <Card className="border-0 sm:border bg-transparent sm:bg-card/90 shadow-none sm:shadow-sm h-fit xl:sticky xl:top-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-primary" />

@@ -1,7 +1,7 @@
 import { handleApiError, ok } from "@/lib/api-response";
 import { requireUser } from "@/lib/auth/require-user";
 import { rateLimit } from "@/lib/rate-limit";
-import { resumeSchema } from "@/lib/validations";
+import { resumeCreateSchema } from "@/lib/validations";
 import { createResume } from "@/services/resume";
 import { listUserResumes } from "@/repositories/resume-repository";
 import { Prisma } from "@prisma/client";
@@ -29,11 +29,10 @@ export async function POST(request: Request) {
     const user = await requireUser();
     rateLimit(`resumes:create:${user.id}`, 20);
 
-    const body = resumeSchema.parse(await request.json());
+    const body = resumeCreateSchema.parse(await request.json());
     const resume = await createResume(user.id, {
-      ...body,
-      contact: body.contact as Prisma.InputJsonObject,
-      settings: body.settings as Prisma.InputJsonObject
+      title: body.title,
+      templateId: body.templateId
     });
     return ok(resume, 201);
   } catch (error) {

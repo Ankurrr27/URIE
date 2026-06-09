@@ -126,3 +126,17 @@ textarea {
   background: hsl(var(--primary));
   opacity: 0.65;
 }
+
+@keyframes infinite-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-infinite-progress {
+  animation: infinite-progress 1.2s infinite ease-in-out;
+}
+

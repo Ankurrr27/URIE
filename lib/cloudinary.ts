@@ -1,117 +1,123 @@
-import "server-only";
-import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
-import { mkdir, writeFile } from "fs/promises";
-import { join } from "path";
-import { assertCloudinaryEnv, env } from "@/lib/env";
-import { ApiError } from "@/lib/api-response";
+import { v2 as cloudinary } from "cloudinary";
+import { env } from "@/lib/env";
 
-const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+cloudinary.config({
+  cloud_name: env.CLOUDINARY_CLOUD_NAME,
+  api_key: env.CLOUDINARY_API_KEY,
+  api_secret: env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
-export type CloudinaryFolder = "profiles" | "resumes";
-export type ImageUploadResult = {
-  url: string;
+export { cloudinary };
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface UploadResult {
   publicId: string;
-  width?: number;
-  height?: number;
-  format?: string;
+  secureUrl: string;
+  width: number;
+  height: number;
+  format: string;
   bytes: number;
-  provider: "cloudinary" | "local";
-};
-
-function configureCloudinary() {
-  assertCloudinaryEnv();
-  cloudinary.config({
-    cloud_name: env.CLOUDINARY_CLOUD_NAME,
-    api_key: env.CLOUDINARY_API_KEY,
-    api_secret: env.CLOUDINARY_API_SECRET,
-    secure: true
-  });
 }
 
-export async function uploadImage(file: File, folder: CloudinaryFolder, userId: string): Promise<ImageUploadResult> {
-  validateImageFile(file);
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  try {
-    const result = await uploadImageToCloudinary(file, folder, userId);
-    return {
-      url: result.secure_url,
-      publicId: result.public_id,
-      width: result.width,
-      height: result.height,
-      format: result.format,
-      bytes: result.bytes,
-      provider: "cloudinary"
-    };
-  } catch (error) {
-    if (process.env.NODE_ENV === "production") throw error;
-    console.warn("Cloudinary upload failed in development; using local upload fallback.", error);
-    return uploadImageLocally(file, folder, userId);
+/**
+ * Upload a File object directly to Cloudinary (converting to base64 Data URI internally).
+ */
+export async function uploadImage(
+  file: File,
+  folder: string,
+  userId: string
+): Promise<{ url: string; publicId: string }> {
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  const base64 = buffer.toString("base64");
+  const dataURI = `data:${file.type};base64,${base64}`;
+
+  const cloudinaryFolder = folder === "profiles" ? "resubee/avatars" : `resubee/${folder}`;
+  const publicId = folder === "profiles" ? `user_${userId}` : `${userId}_${Date.now()}`;
+
+  const options: any = {
+    folder: cloudinaryFolder,
+    public_id: publicId,
+    overwrite: true,
+    resource_type: "image",
+  };
+
+  if (folder === "profiles") {
+    options.transformation = [
+      { width: 400, height: 400, crop: "fill", gravity: "face" },
+      { quality: "auto", fetch_format: "auto" },
+    ];
+  } else {
+    options.transformation = [
+      { quality: "auto", fetch_format: "auto" }
+    ];
   }
-}
 
-async function uploadImageToCloudinary(file: File, folder: CloudinaryFolder, userId: string) {
-  validateImageFile(file);
-  configureCloudinary();
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const publicId = `${folder}/${userId}/${crypto.randomUUID()}`;
-
-  return new Promise<UploadApiResponse>((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        public_id: publicId,
-        folder: "resubee",
-        resource_type: "image",
-        overwrite: false,
-        transformation: [
-          { quality: "auto:good", fetch_format: "auto" },
-          folder === "profiles" ? { width: 512, height: 512, crop: "fill", gravity: "face" } : { width: 1600, crop: "limit" }
-        ]
-      },
-      (error, result) => {
-        if (error) {
-          reject(new ApiError(502, "Cloudinary upload failed. Check your cloud name, API key, and API secret.", "CLOUDINARY_UPLOAD_FAILED"));
-          return;
-        }
-        if (!result) {
-          reject(new ApiError(502, "Cloudinary did not return an upload result.", "CLOUDINARY_EMPTY_RESPONSE"));
-          return;
-        }
-        resolve(result);
-      }
-    );
-
-    stream.end(buffer);
-  });
-}
-
-async function uploadImageLocally(file: File, folder: CloudinaryFolder, userId: string): Promise<ImageUploadResult> {
-  const extension = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
-  const publicId = `${folder}/${userId}/${crypto.randomUUID()}.${extension}`;
-  const relativePath = join("uploads", folder, userId);
-  const absoluteDir = join(process.cwd(), "public", relativePath);
-  await mkdir(absoluteDir, { recursive: true });
-
-  const fileName = `${crypto.randomUUID()}.${extension}`;
-  const absolutePath = join(absoluteDir, fileName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(absolutePath, buffer);
+  const result = await cloudinary.uploader.upload(dataURI, options);
 
   return {
-    url: `/${relativePath.replaceAll("\\", "/")}/${fileName}`,
-    publicId,
-    bytes: file.size,
-    format: extension,
-    provider: "local"
+    url: result.secure_url,
+    publicId: result.public_id,
   };
 }
 
-export function validateImageFile(file: File) {
-  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    throw new ApiError(415, "Only JPEG, PNG, WebP, and GIF images are supported.", "INVALID_IMAGE_TYPE");
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    throw new ApiError(413, "Image must be smaller than 3MB.", "IMAGE_TOO_LARGE");
+/**
+ * Upload a profile picture from a base64 data URI or a remote URL.
+ * Returns structured result with the secure CDN URL.
+ */
+export async function uploadProfilePicture(
+  source: string, // base64 dataURI OR remote URL
+  userId: string
+): Promise<UploadResult> {
+  const result = await cloudinary.uploader.upload(source, {
+    folder: "resubee/avatars",
+    public_id: `user_${userId}`,
+    overwrite: true,
+    transformation: [
+      { width: 400, height: 400, crop: "fill", gravity: "face" },
+      { quality: "auto", fetch_format: "auto" },
+    ],
+    resource_type: "image",
+  });
+
+  return {
+    publicId: result.public_id,
+    secureUrl: result.secure_url,
+    width: result.width,
+    height: result.height,
+    format: result.format,
+    bytes: result.bytes,
+  };
+}
+
+/**
+ * Delete a profile picture by its Cloudinary public ID.
+ */
+export async function deleteProfilePicture(publicId: string): Promise<void> {
+  await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+}
+
+/**
+ * Derive the Cloudinary public_id from a stored URL (for deletion).
+ * e.g. "https://res.cloudinary.com/.../resubee/avatars/user_abc.jpg"
+ *   → "resubee/avatars/user_abc"
+ */
+export function publicIdFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    // pathname: /cloud_name/image/upload/v123456/resubee/avatars/user_abc.jpg
+    const parts = u.pathname.split("/upload/");
+    if (parts.length < 2) return null;
+    const afterUpload = parts[1]; // v123456/resubee/avatars/user_abc.jpg
+    // strip optional version segment "v\d+/"
+    const withoutVersion = afterUpload.replace(/^v\d+\//, "");
+    // strip extension
+    return withoutVersion.replace(/\.[^.]+$/, "");
+  } catch {
+    return null;
   }
 }

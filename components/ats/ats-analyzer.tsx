@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { FileChartColumnIncreasing, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,49 @@ type Result = {
 export function AtsAnalyzer() {
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resumes, setResumes] = useState<{ id: string; title: string }[]>([]);
+  const [mode, setMode] = useState<"upload" | "select">("upload");
+  const [selectedResumeId, setSelectedResumeId] = useState("");
 
-  async function submit(formData: FormData) {
+  useEffect(() => {
+    async function loadResumes() {
+      try {
+        const response = await fetch("/api/resumes?pageSize=50");
+        const payload = await response.json();
+        if (response.ok && payload.data?.items) {
+          setResumes(payload.data.items);
+          if (payload.data.items.length) {
+            setSelectedResumeId(payload.data.items[0].id);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load resumes", e);
+      }
+    }
+    void loadResumes();
+  }, []);
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch("/api/ats/analyze", { method: "POST", body: formData });
+      const formData = new FormData(event.currentTarget);
+      let response;
+      if (mode === "upload") {
+        response = await fetch("/api/ats/analyze", { method: "POST", body: formData });
+      } else {
+        const payload = {
+          resumeId: selectedResumeId,
+          jobDescription: formData.get("jobDescription"),
+          jobTitle: formData.get("jobTitle"),
+          company: formData.get("company")
+        };
+        response = await fetch("/api/ats/analyze-resume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error?.message ?? "Analysis failed");
       setResult(payload.data);
@@ -39,28 +77,74 @@ export function AtsAnalyzer() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+    <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
       <Card>
-        <CardHeader>
-          <CardTitle>Analyze resume</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Analyze resume</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={submit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="resume">Resume PDF</Label>
-              <Input id="resume" name="resume" type="file" accept="application/pdf" required />
+          <form onSubmit={submit} className="space-y-3">
+            <div className="flex gap-2 rounded-md bg-accent/25 p-1 text-xs">
+              <button
+                type="button"
+                className={`flex-1 rounded-sm py-1.5 font-medium transition ${mode === "upload" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground"}`}
+                onClick={() => setMode("upload")}
+              >
+                Upload PDF
+              </button>
+              <button
+                type="button"
+                className={`flex-1 rounded-sm py-1.5 font-medium transition ${mode === "select" ? "bg-background shadow-xs text-foreground" : "text-muted-foreground"}`}
+                onClick={() => setMode("select")}
+                disabled={resumes.length === 0}
+              >
+                Select Saved ({resumes.length})
+              </button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="jobTitle">Job title</Label>
-              <Input id="jobTitle" name="jobTitle" placeholder="Senior Full Stack Engineer" />
+
+            {mode === "upload" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="resume" className="text-xs">Resume PDF</Label>
+                <Input id="resume" name="resume" type="file" accept="application/pdf" required className="h-8.5 text-xs" />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label htmlFor="resumeSelect" className="text-xs">Choose saved resume</Label>
+                <select
+                  id="resumeSelect"
+                  className="h-8.5 w-full rounded-md border border-input bg-background px-2.5 text-xs focus-ring"
+                  value={selectedResumeId}
+                  onChange={(e) => setSelectedResumeId(e.target.value)}
+                >
+                  {resumes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="jobTitle" className="text-xs">Job title</Label>
+              <Input id="jobTitle" name="jobTitle" placeholder="Senior Full Stack Engineer" className="h-8.5 text-xs" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="jobDescription">Job description</Label>
-              <Textarea id="jobDescription" name="jobDescription" required minLength={80} className="min-h-64" />
+            <div className="space-y-1.5">
+              <Label htmlFor="company" className="text-xs">Company</Label>
+              <Input id="company" name="company" placeholder="Stripe" className="h-8.5 text-xs" />
             </div>
-            <Button disabled={loading} className="w-full">
-              <Upload className="mr-2 h-4 w-4" />
-              {loading ? "Analyzing..." : "Run ATS analysis"}
+            <div className="space-y-1.5">
+              <Label htmlFor="jobDescription" className="text-xs">Job description</Label>
+              <Textarea id="jobDescription" name="jobDescription" required minLength={80} className="min-h-40 text-xs" placeholder="Paste target description (min 80 chars)..." />
+            </div>
+            <Button disabled={loading} className="w-full h-8.5 text-xs">
+              {loading ? (
+                "Analyzing..."
+              ) : (
+                <>
+                  <FileChartColumnIncreasing className="mr-1.5 h-3.5 w-3.5" />
+                  Run ATS analysis
+                </>
+              )}
             </Button>
           </form>
         </CardContent>

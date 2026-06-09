@@ -2,7 +2,7 @@ import { Palette } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useThemeAction } from "@/app/dashboard/templates/actions";
+import { useThemeAction } from "./actions";
 
 const themes = [
   { name: "Modern Minimal", slug: "ats-classic", className: "resume-theme-modern", accent: "Clean, crisp, one-page product-minded layout." },
@@ -18,20 +18,22 @@ export default function TemplatesPage() {
         <h1 className="text-3xl font-semibold tracking-tight">One-page resume themes</h1>
         <p className="mt-2 text-sm text-muted-foreground">Pick a theme to create a blank resume and open the editor immediately.</p>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {themes.map((theme) => (
-          <Card key={theme.name}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary" /> {theme.name}</CardTitle>
+          <Card key={theme.name} className="surface-panel shadow-sm flex flex-col justify-between overflow-hidden">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base"><Palette className="h-4.5 w-4.5 text-primary" /> {theme.name}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className={`rounded-lg border bg-white p-6 text-zinc-950 ${theme.className}`}>
-                {theme.name === "SDE One Page" ? <SdeLayoutPreview /> : <DefaultThemePreview />}
+            <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className={`rounded-lg border bg-white p-5 text-zinc-950 aspect-[8.5/11] flex flex-col justify-between shadow-inner ${theme.className}`}>
+                  {theme.slug === "sde-one-page" ? <SdeLayoutPreview /> : theme.slug === "professional-corporate" ? <CorporateThemePreview /> : <DefaultThemePreview />}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{theme.accent}</p>
               </div>
-              <p className="text-sm text-muted-foreground">{theme.accent}</p>
-              <form action={useThemeAction}>
+              <form action={useThemeAction} className="pt-2">
                 <input type="hidden" name="themeSlug" value={theme.slug} />
-                <Button variant="secondary">Use theme</Button>
+                <Button className="w-full text-xs h-8.5 bg-primary text-primary-foreground hover:bg-primary/95">Use this theme</Button>
               </form>
             </CardContent>
           </Card>
@@ -43,31 +45,76 @@ export default function TemplatesPage() {
 
 function DefaultThemePreview() {
   return (
-    <>
-      <h2 className="text-2xl font-bold" style={{ color: "hsl(var(--resume-accent))" }}>Your Name</h2>
-      <p className="text-sm text-zinc-600">Target Role | email@example.com</p>
-      <div className="mt-5">
-        <h3 className="border-b text-xs font-bold uppercase tracking-wide">Summary</h3>
-        <p className="mt-2 text-sm">Outcome-focused professional summary tailored to the target job.</p>
+    <div className="flex-1 flex flex-col justify-between text-[7px] text-zinc-900 leading-normal">
+      <header className="border-b-[0.5px] border-zinc-200 pb-1 flex flex-col">
+        <h4 className="text-[10px] font-bold text-teal-600 tracking-tight leading-tight">Alex Morgan</h4>
+        <p className="text-[6px] text-zinc-500">alex@example.com | linkedin.com/in/alex | github.com/alex</p>
+      </header>
+      <div className="flex-1 space-y-2 mt-2">
+        <div>
+          <h5 className="border-b-[0.5px] border-zinc-200 text-[6.5px] font-bold uppercase tracking-wider text-zinc-700">Summary</h5>
+          <p className="mt-0.5 text-zinc-600">Product engineer focused on reliable systems, product velocity, and measurable business outcomes.</p>
+        </div>
+        <div>
+          <h5 className="border-b-[0.5px] border-zinc-200 text-[6.5px] font-bold uppercase tracking-wider text-zinc-700">Experience</h5>
+          <div className="mt-0.5 flex justify-between font-bold text-[6px]">
+            <span>Senior Software Engineer</span>
+            <span className="text-zinc-500 font-normal">2022 -- Present</span>
+          </div>
+          <ul className="mt-0.5 list-disc pl-2.5 text-zinc-600 text-[5.5px] space-y-0.5">
+            <li>Improved API latency by 38% by redesigning database access patterns.</li>
+            <li>Led migration to Kubernetes for services handling 2M monthly requests.</li>
+          </ul>
+        </div>
       </div>
-    </>
+    </div>
+  );
+}
+
+function CorporateThemePreview() {
+  return (
+    <div className="flex-1 flex flex-col justify-between text-[7px] text-zinc-900 leading-normal font-serif">
+      <header className="border-b-[0.5px] border-zinc-300 pb-1 text-center">
+        <h4 className="text-[10px] font-bold text-blue-900 tracking-tight uppercase leading-tight">Corporate Leader</h4>
+        <p className="text-[5.5px] text-zinc-500 font-sans mt-0.5">leader@example.com | New York, NY | +1 555-0199</p>
+      </header>
+      <div className="flex-1 space-y-2 mt-2">
+        <div>
+          <h5 className="border-b-[0.5px] border-zinc-300 text-[6.5px] font-bold uppercase tracking-wider text-zinc-800 text-center">Executive Summary</h5>
+          <p className="mt-0.5 text-zinc-600 font-sans text-[6px]">Operations and product leader with experience scaling teams, revenue operations, and enterprise delivery.</p>
+        </div>
+        <div>
+          <h5 className="border-b-[0.5px] border-zinc-300 text-[6.5px] font-bold uppercase tracking-wider text-zinc-800 text-center">Leadership Experience</h5>
+          <div className="mt-0.5 flex justify-between font-bold text-[6px] font-sans">
+            <span>Director of Operations</span>
+            <span className="text-zinc-500 font-normal">2020 -- Present</span>
+          </div>
+          <ul className="mt-0.5 list-disc pl-2.5 text-zinc-600 font-sans text-[5.5px] space-y-0.5">
+            <li>Reduced operating costs by 18% while improving customer response SLAs.</li>
+            <li>Collaborated with product teams to align strategic roadmaps.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function SdeLayoutPreview() {
-  const sections = ["Education", "Skills", "Projects", "Relevant Coursework", "Achievements", "Positions of Responsibility"];
+  const sections = ["Education", "Skills", "Experience", "Projects", "Achievements"];
   return (
-    <>
-      <h2 className="text-center text-2xl font-bold" style={{ color: "hsl(var(--resume-accent))" }}>Your Name</h2>
-      <p className="text-center text-xs text-zinc-600">Email | LinkedIn | GitHub | LeetCode | GFG | Portfolio</p>
-      <div className="mt-5 grid gap-3">
+    <div className="flex-1 flex flex-col justify-between text-[7px] text-zinc-900 leading-normal">
+      <header className="text-center border-b-[0.5px] border-zinc-200 pb-0.5 flex flex-col">
+        <h4 className="text-[9px] font-bold text-slate-800 tracking-tight leading-tight">Jordan Smith</h4>
+        <p className="text-[5.5px] text-zinc-500">stanford@edu | github.com/jordan | +1 555-0100</p>
+      </header>
+      <div className="flex-1 mt-1.5 space-y-1">
         {sections.map((section) => (
-          <div key={section}>
-            <h3 className="border-b text-xs font-bold uppercase tracking-wide">{section}</h3>
-            <p className="mt-1 text-xs text-zinc-600">Blank field group ready to be filled from universal resume nodes.</p>
+          <div key={section} className="space-y-0.5">
+            <h5 className="border-b-[0.5px] border-zinc-200 text-[6px] font-bold uppercase tracking-wider text-zinc-700 leading-none">{section}</h5>
+            <div className="h-1 bg-zinc-100 rounded-xs w-full opacity-60" />
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }

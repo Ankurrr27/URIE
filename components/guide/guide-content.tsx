@@ -12,6 +12,11 @@ const sections = [
     body: "Start with Universal Resume nodes. Add every relevant project, role, skill, education item, and proof point once. Then compose a targeted resume from the best nodes for each role."
   },
   {
+    id: "extract",
+    title: "Decomposing Resumes via AI Auto-Extraction",
+    body: "Save time by uploading your existing PDF resume to URIE's Auto-Extractor. The system reads the PDF structure, parses the raw text block, and uses advanced AI model schemas to decompose your achievements into atomic, structured Career Nodes. You can then review, edit, star, color-code, and reuse these nodes in the Node Manager library."
+  },
+  {
     id: "ats",
     title: "How ATS scoring works",
     body: "URIE extracts text from your PDF, compares it to job-description keywords, checks structure signals, and highlights missing role language."

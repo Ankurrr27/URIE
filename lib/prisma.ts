@@ -1,13 +1,19 @@
 import { PrismaClient } from "@prisma/client";
 
+// Prevent multiple Prisma Client instances in development (hot-reload)
+// https://www.prisma.io/docs/guides/performance-and-optimization/connection-management
+
 const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
+  prisma: PrismaClient | undefined;
 };
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"]
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
   });
 
 if (process.env.NODE_ENV !== "production") {

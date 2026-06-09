@@ -1,24 +1,37 @@
+import { env } from "@/lib/env";
 import { ApiError } from "@/lib/api-response";
 
-type Bucket = {
+interface RateLimitEntry {
   count: number;
   resetAt: number;
-};
+}
 
-const buckets = new Map<string, Bucket>();
+// In-memory store – replace Map with Redis for multi-replica deployments
+const store = new Map<string, RateLimitEntry>();
 
-export function rateLimit(key: string, limit = Number(process.env.RATE_LIMIT_MAX ?? 80), windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60000)) {
+// Prune expired entries every 5 minutes to prevent memory leaks
+setInterval(() => {
   const now = Date.now();
-  const bucket = buckets.get(key);
+  for (const [key, entry] of store) {
+    if (entry.resetAt <= now) store.delete(key);
+  }
+}, 5 * 60 * 1_000);
 
-  if (!bucket || bucket.resetAt < now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
+export function rateLimit(key: string, max?: number, windowMs?: number) {
+  const actualMax = max ?? env.RATE_LIMIT_MAX;
+  const actualWindowMs = windowMs ?? env.RATE_LIMIT_WINDOW_MS;
+  const now = Date.now();
+
+  const entry = store.get(key);
+
+  if (!entry || entry.resetAt <= now) {
+    store.set(key, { count: 1, resetAt: now + actualWindowMs });
     return;
   }
 
-  if (bucket.count >= limit) {
-    throw new ApiError(429, "Too many requests. Please slow down.", "RATE_LIMITED");
-  }
+  entry.count++;
 
-  bucket.count += 1;
+  if (entry.count > actualMax) {
+    throw new ApiError(429, "Too many requests. Please try again later.", "TOO_MANY_REQUESTS");
+  }
 }

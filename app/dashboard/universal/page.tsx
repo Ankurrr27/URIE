@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UniversalResumeWorkspace } from "@/components/universal/universal-resume-workspace";
 
@@ -13,12 +13,20 @@ export default async function UniversalResumePage() {
             Save one reusable career fact at a time. Manage, color, star, and compose nodes from the dedicated tabs.
           </p>
         </div>
-        <Button asChild variant="secondary">
-          <Link href="/dashboard/universal/view">
-            <Eye className="mr-2 h-4 w-4" />
-            View universal resume
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="border-primary/20 hover:bg-primary/5">
+            <Link href="/dashboard/universal/extract">
+              <Sparkles className="mr-2 h-4 w-4 text-primary" />
+              Auto-extract facts
+            </Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link href="/dashboard/universal/view">
+              <Eye className="mr-2 h-4 w-4" />
+              View universal resume
+            </Link>
+          </Button>
+        </div>
       </div>
       <UniversalResumeWorkspace />
     </div>

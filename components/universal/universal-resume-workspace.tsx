@@ -53,30 +53,40 @@ export function UniversalResumeWorkspace() {
   }
 
   return (
-    <div className="max-w-3xl">
-      <Card className="surface-panel">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+    <div className="max-w-xl">
+      <Card className="surface-panel shadow-xs">
+        <CardHeader className="pb-2 p-4 sm:p-5">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Brain className="h-5 w-5 text-primary" />
             Add career node
           </CardTitle>
-          <CardDescription>Store every reusable career fact once, then reuse it across resumes.</CardDescription>
+          <CardDescription className="text-xs">Store every reusable career fact once, then reuse it across resumes.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form action={createNode} className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              {careerNodeFormConfigs.map((item) => (
-                <Button key={item.type} type="button" variant={type === item.type ? "default" : "secondary"} size="sm" onClick={() => setType(item.type)}>
-                  {item.label}
-                </Button>
-              ))}
+        <CardContent className="p-4 sm:p-5 pt-0">
+          <form action={createNode} className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="nodeTypeSelect" className="text-xs text-muted-foreground">Fact category structure</Label>
+              <select
+                id="nodeTypeSelect"
+                className="h-8.5 w-full rounded-md border border-input bg-background px-3 text-xs focus-ring"
+                value={type}
+                onChange={(e) => setType(e.target.value as any)}
+              >
+                {careerNodeFormConfigs.map((item) => (
+                  <option key={item.type} value={item.type}>
+                    {item.label} Presets
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="rounded-md border bg-accent/30 p-3 text-xs text-muted-foreground">
+            <div className="rounded-md border bg-accent/20 p-2.5 text-[11px] text-muted-foreground leading-normal">
               {selectedType.helper}
             </div>
-            {selectedType.fields.map((field) => <DynamicField key={field.name} field={field} />)}
-            <Button disabled={pending} className="w-full">
-              <Plus className="mr-2 h-4 w-4" />
+            <div className="space-y-3">
+              {selectedType.fields.map((field) => <DynamicField key={field.name} field={field} />)}
+            </div>
+            <Button disabled={pending} className="w-full h-8.5 text-xs pt-1">
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
               Add to universal resume
             </Button>
           </form>
@@ -88,12 +98,12 @@ export function UniversalResumeWorkspace() {
 
 function DynamicField({ field }: { field: CareerNodeFieldConfig }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={field.name}>{field.label}</Label>
+    <div className="space-y-1">
+      <Label htmlFor={field.name} className="text-xs text-muted-foreground">{field.label}</Label>
       {field.kind === "textarea" ? (
-        <Textarea id={field.name} name={field.name} placeholder={field.placeholder} required={field.required} />
+        <Textarea id={field.name} name={field.name} placeholder={field.placeholder} required={field.required} className="text-xs min-h-16" />
       ) : (
-        <Input id={field.name} name={field.name} placeholder={field.placeholder} required={field.required} />
+        <Input id={field.name} name={field.name} placeholder={field.placeholder} required={field.required} className="h-8.5 text-xs" />
       )}
     </div>
   );
