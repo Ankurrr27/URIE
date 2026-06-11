@@ -216,7 +216,7 @@ export function ResumeEditor({ resume }: { resume: Resume }) {
       }).join("\n\n");
     const latex = ["% URIE LaTeX Export","\\documentclass[10pt]{article}","\\usepackage[margin=0.65in]{geometry}","\\usepackage[hidelinks]{hyperref}","\\usepackage{enumitem}","\\begin{document}","\\begin{center}",`{\\LARGE \\textbf{${name}}}\\\\`,`\\small ${contactParts}`,"\\end{center}","",sectionBodies,"\\end{document}"].join("\n");
     window.localStorage.setItem("resubee-latex-source", latex);
-    toast.success("Formatted to LaTeX! Redirecting to Editor…");
+    toast.success("Formatted to LaTeX! Redirecting to Editor");
     router.push("/dashboard/latex");
   }
 
